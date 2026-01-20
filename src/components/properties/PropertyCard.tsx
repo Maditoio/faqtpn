@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { Card } from '@/components/ui/Card'
 import { IconButton } from '@/components/ui/IconButton'
 import { Badge } from '@/components/ui/Badge'
-import { HeartIcon, LocationIcon } from '@/components/icons/Icons'
+import { HeartIcon, LocationIcon, SquareIcon } from '@/components/icons/Icons'
 import { useRouter } from 'next/navigation'
 
 interface PropertyCardProps {
@@ -112,8 +112,14 @@ export function PropertyCard({
         {/* Details */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-4 text-sm text-gray-600">
-            <span>{property.bedrooms} Beds</span>
-            <span>{property.bathrooms} Baths</span>
+            <span className="flex items-center gap-1">
+              <SquareIcon className="w-4 h-4" />
+              {property.bedrooms} Beds
+            </span>
+            <span className="flex items-center gap-1">
+              <SquareIcon className="w-4 h-4" />
+              {property.bathrooms} Baths
+            </span>
           </div>
           {property._count && (
             <span className="text-xs text-gray-500">

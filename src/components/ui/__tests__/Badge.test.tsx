@@ -34,7 +34,7 @@ describe('Badge Component', () => {
   });
 
   it('should display SUSPENDED status correctly', () => {
-    render(<Badge variant="error">SUSPENDED</Badge>);
+    render(<Badge variant="danger">SUSPENDED</Badge>);
     expect(screen.getByText('SUSPENDED')).toBeInTheDocument();
   });
 

@@ -1,185 +1,270 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
-import { HomeIcon, SearchIcon } from '@/components/icons/Icons'
+import { Footer } from '@/components/layout/Footer'
+import { HomeIcon, SearchIcon, CheckIcon } from '@/components/icons/Icons'
+
+interface Stats {
+  total: number
+  approved: number
+  locations: number
+}
 
 export default function Home() {
+  const [stats, setStats] = useState<Stats>({ total: 0, approved: 0, locations: 0 })
+
+  useEffect(() => {
+    fetch('/api/properties/stats')
+      .then((res) => res.json())
+      .then((data) => setStats(data))
+      .catch(console.error)
+  }, [])
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="relative py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto text-center">
-          {/* Logo */}
-          <div className="flex justify-center mb-8">
-            <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center">
-              <HomeIcon className="w-12 h-12 text-white" />
+      <section className="relative bg-gradient-to-br from-blue-600 to-blue-800 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div>
+              <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+                Find Your Perfect Home Today
+              </h1>
+              <p className="text-xl text-blue-100 mb-8">
+                Discover thousands of rental properties in your area. 
+                From cozy studios to spacious family homes.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link href="/properties">
+                  <Button variant="primary" size="lg" className="bg-white text-blue-600 hover:bg-gray-100 w-full sm:w-auto">
+                    <SearchIcon className="w-5 h-5 mr-2" />
+                    Browse Properties
+                  </Button>
+                </Link>
+                <Link href="/owner/properties/new">
+                  <Button variant="secondary" size="lg" className="border-2 border-white text-white hover:bg-white hover:text-blue-600 w-full sm:w-auto">
+                    <HomeIcon className="w-5 h-5 mr-2" />
+                    List Your Property
+                  </Button>
+                </Link>
+              </div>
+            </div>
+            <div className="relative hidden md:block">
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+                <img
+                  src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&h=400&fit=crop"
+                  alt="Beautiful home"
+                  className="rounded-lg shadow-2xl w-full h-80 object-cover"
+                />
+              </div>
             </div>
           </div>
+        </div>
+        {/* Wave decoration */}
+        <div className="absolute bottom-0 left-0 right-0">
+          <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0 120L60 110C120 100 240 80 360 70C480 60 600 60 720 65C840 70 960 80 1080 85C1200 90 1320 90 1380 90L1440 90V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" fill="white"/>
+          </svg>
+        </div>
+      </section>
 
-          {/* Heading */}
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-            Find Your Perfect
-            <span className="text-blue-600"> Rental Home</span>
-          </h1>
-
-          <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto">
-            Discover thousands of rental properties or list your property for rent. 
-            Secure, simple, and trusted by thousands of users.
-          </p>
-
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link href="/properties">
-              <Button variant="primary" size="lg" className="px-8">
-                <SearchIcon className="w-5 h-5 mr-2" />
-                Browse Properties
-              </Button>
-            </Link>
-            <Link href="/auth/register">
-              <Button variant="secondary" size="lg" className="px-8">
-                List Your Property
-              </Button>
-            </Link>
+      {/* Stats Section */}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-4">
+                <HomeIcon className="w-8 h-8 text-blue-600" />
+              </div>
+              <div className="text-4xl font-bold text-gray-900 mb-2">{stats.approved}+</div>
+              <div className="text-gray-600">Active Properties</div>
+            </div>
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
+                <CheckIcon className="w-8 h-8 text-green-600" />
+              </div>
+              <div className="text-4xl font-bold text-gray-900 mb-2">100%</div>
+              <div className="text-gray-600">Verified Listings</div>
+            </div>
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-100 mb-4">
+                <SearchIcon className="w-8 h-8 text-purple-600" />
+              </div>
+              <div className="text-4xl font-bold text-gray-900 mb-2">{stats.locations}+</div>
+              <div className="text-gray-600">Locations Available</div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
-            Why Choose RentHub?
-          </h2>
+      <section className="py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Why Choose RentHub?
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              We make finding and listing rental properties simple, secure, and efficient
+            </p>
+          </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             {/* Feature 1 */}
             <div className="text-center">
-              <div className="flex justify-center mb-4">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                  <SearchIcon className="w-8 h-8 text-blue-600" />
+              <div className="relative mb-6">
+                <img
+                  src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop"
+                  alt="Wide selection"
+                  className="rounded-lg shadow-lg w-full h-64 object-cover"
+                />
+                <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center shadow-lg">
+                  <SearchIcon className="w-6 h-6 text-white" />
                 </div>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Easy Search
+              <h3 className="text-xl font-semibold text-gray-900 mb-3 mt-6">
+                Wide Selection
               </h3>
               <p className="text-gray-600">
-                Filter properties by location, price, bedrooms, and more to find exactly what you need.
+                Browse through hundreds of verified properties across multiple locations. 
+                Find exactly what you're looking for.
               </p>
             </div>
 
             {/* Feature 2 */}
             <div className="text-center">
-              <div className="flex justify-center mb-4">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                  <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
+              <div className="relative mb-6">
+                <img
+                  src="https://images.unsplash.com/photo-1582407947304-fd86f028f716?w=400&h=300&fit=crop"
+                  alt="Verified listings"
+                  className="rounded-lg shadow-lg w-full h-64 object-cover"
+                />
+                <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-12 h-12 rounded-full bg-green-600 flex items-center justify-center shadow-lg">
+                  <CheckIcon className="w-6 h-6 text-white" />
                 </div>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Secure Platform
+              <h3 className="text-xl font-semibold text-gray-900 mb-3 mt-6">
+                Verified Listings
               </h3>
               <p className="text-gray-600">
-                Your data is protected with industry-standard security measures and encryption.
+                Every property is carefully reviewed and verified by our team 
+                to ensure quality and authenticity.
               </p>
             </div>
 
             {/* Feature 3 */}
             <div className="text-center">
-              <div className="flex justify-center mb-4">
-                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center">
-                  <HomeIcon className="w-8 h-8 text-purple-600" />
+              <div className="relative mb-6">
+                <img
+                  src="https://images.unsplash.com/photo-1556912172-45b7abe8b7e1?w=400&h=300&fit=crop"
+                  alt="Easy listing"
+                  className="rounded-lg shadow-lg w-full h-64 object-cover"
+                />
+                <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center shadow-lg">
+                  <HomeIcon className="w-6 h-6 text-white" />
                 </div>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Verified Listings
+              <h3 className="text-xl font-semibold text-gray-900 mb-3 mt-6">
+                Easy Listing
               </h3>
               <p className="text-gray-600">
-                All properties are reviewed by our team before being listed on the platform.
+                Property owners can list their rentals in minutes with our 
+                simple and intuitive listing process.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-blue-600 text-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-3 gap-8 text-center">
-            <div>
-              <div className="text-4xl font-bold mb-2">1,000+</div>
-              <div className="text-blue-100">Active Listings</div>
+      {/* How It Works Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              How It Works
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Get started in three simple steps
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="relative">
+              <div className="bg-white rounded-xl p-8 shadow-md">
+                <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-2xl font-bold mb-4">
+                  1
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                  Create Account
+                </h3>
+                <p className="text-gray-600">
+                  Sign up for free and set up your profile in minutes. Choose whether you're looking to rent or list properties.
+                </p>
+              </div>
+              {/* Connector line for desktop */}
+              <div className="hidden md:block absolute top-16 left-full w-full h-1 bg-gradient-to-r from-blue-200 to-transparent" style={{ width: 'calc(100% - 2rem)' }}></div>
             </div>
-            <div>
-              <div className="text-4xl font-bold mb-2">5,000+</div>
-              <div className="text-blue-100">Happy Renters</div>
+
+            <div className="relative">
+              <div className="bg-white rounded-xl p-8 shadow-md">
+                <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-2xl font-bold mb-4">
+                  2
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                  Search or List
+                </h3>
+                <p className="text-gray-600">
+                  Browse available properties with advanced filters or create your own listing with photos and details.
+                </p>
+              </div>
+              <div className="hidden md:block absolute top-16 left-full w-full h-1 bg-gradient-to-r from-blue-200 to-transparent" style={{ width: 'calc(100% - 2rem)' }}></div>
             </div>
-            <div>
-              <div className="text-4xl font-bold mb-2">500+</div>
-              <div className="text-blue-100">Property Owners</div>
+
+            <div className="relative">
+              <div className="bg-white rounded-xl p-8 shadow-md">
+                <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-2xl font-bold mb-4">
+                  3
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                  Connect & Move
+                </h3>
+                <p className="text-gray-600">
+                  Contact property owners directly, schedule viewings, and find your perfect home or tenant.
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">
-            Ready to Get Started?
+      <section className="py-20 bg-blue-600">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+            Ready to Find Your Next Home?
           </h2>
-          <p className="text-xl text-gray-600 mb-8">
-            Join thousands of users who trust RentHub for their rental needs.
+          <p className="text-xl text-blue-100 mb-8">
+            Join thousands of happy renters and property owners on RentHub
           </p>
-          <Link href="/auth/register">
-            <Button variant="primary" size="lg" className="px-12">
-              Create Free Account
-            </Button>
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/properties">
+              <Button variant="primary" size="lg" className="bg-white text-blue-600 hover:bg-gray-100 w-full sm:w-auto">
+                Start Searching
+              </Button>
+            </Link>
+            <Link href="/register">
+              <Button variant="secondary" size="lg" className="border-2 border-white text-white hover:bg-white hover:text-blue-600 w-full sm:w-auto">
+                Sign Up Free
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto text-center">
-          <p className="text-gray-400">
-            © 2026 RentHub. All rights reserved.
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
-}
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
 }

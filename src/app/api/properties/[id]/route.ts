@@ -9,11 +9,13 @@ import { getCurrentUser } from '@/lib/authorization'
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
+    
     const property = await prisma.property.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         images: {
           orderBy: { order: 'asc' },
@@ -68,7 +70,7 @@ export async function GET(
  */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser()
@@ -77,9 +79,11 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const { id } = await params
+
     // Find property
     const property = await prisma.property.findUnique({
-      where: { id: params.id },
+      where: { id },
     })
 
     if (!property) {
@@ -141,9 +145,10 @@ export async function PATCH(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await getCurrentUser()
 
     if (!user) {
@@ -152,7 +157,7 @@ export async function DELETE(
 
     // Find property
     const property = await prisma.property.findUnique({
-      where: { id: params.id },
+      where: { id },
     })
 
     if (!property) {
@@ -169,7 +174,7 @@ export async function DELETE(
 
     // Soft delete by setting status to DELETED
     await prisma.property.update({
-      where: { id: params.id },
+      where: { id },
       data: { status: 'DELETED' },
     })
 
@@ -179,7 +184,7 @@ export async function DELETE(
         data: {
           action: 'PROPERTY_DELETED',
           userId: user.id,
-          targetId: params.id,
+          targetId: id,
           details: `Property deleted: ${property.title}`,
         },
       })
