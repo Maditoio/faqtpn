@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
 import { Button } from '@/components/ui/Button'
 import { IconButton } from '@/components/ui/IconButton'
+import { NotificationBell } from '@/components/NotificationBell'
 import {
   HomeIcon,
   HeartIcon,
@@ -79,7 +80,17 @@ export function Navbar() {
                 )}
 
                 <div className="flex items-center space-x-3">
-                  <span className="text-sm text-gray-700">{session.user.name}</span>
+                  <NotificationBell />
+                  <Link href="/profile">
+                    <button className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-blue-600 font-semibold text-xs">
+                          {session.user.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <span className="hidden md:inline">{session.user.name}</span>
+                    </button>
+                  </Link>
                   <IconButton
                     icon={<LogoutIcon className="w-5 h-5" />}
                     variant="secondary"
@@ -169,14 +180,21 @@ export function Navbar() {
 
                 <div className="pt-3 border-t border-gray-200">
                   <p className="text-sm text-gray-700 mb-2">{session.user.name}</p>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="w-full"
-                    onClick={handleSignOut}
-                  >
-                    Sign Out
-                  </Button>
+                  <div className="space-y-2">
+                    <Link href="/profile" className="block">
+                      <Button variant="ghost" size="sm" className="w-full justify-start">
+                        Profile Settings
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="w-full"
+                      onClick={handleSignOut}
+                    >
+                      Sign Out
+                    </Button>
+                  </div>
                 </div>
               </>
             ) : (

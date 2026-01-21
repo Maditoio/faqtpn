@@ -20,7 +20,19 @@ enum PropertyStatus {
   PENDING       // Awaiting admin approval
   APPROVED      // Active listing
   SUSPENDED     // Admin suspended
+  RENTED        // Property has been rented
   DELETED       // Soft deleted
+}
+
+enum PropertyType {
+  APARTMENT            // Apartment/Flat
+  HOUSE                // Standalone house
+  TOWNHOUSE            // Townhouse
+  COTTAGE              // Cottage
+  BACKROOM             // Backroom/Granny flat
+  WAREHOUSE            // Warehouse
+  INDUSTRIAL_PROPERTY  // Industrial property
+  COMMERCIAL_PROPERTY  // Commercial property/office space
 }
 
 enum AuditAction {
@@ -35,12 +47,24 @@ enum AuditAction {
   LOGIN_FAILED
 }
 
+enum NotificationType {
+  PROPERTY_UNAVAILABLE      // Property was rented
+  PROPERTY_APPROVED          // Property was approved by admin
+  PROPERTY_REJECTED          // Property was rejected/suspended
+  PRICE_DROP                 // Price dropped on favorited property
+  NEW_PROPERTY_LOCATION      // New property in favorite location
+  PROPERTY_AVAILABLE         // Property is available again
+  INFO                       // General info
+}
+
 // User Model - All application users
 model User {
   id            String      @id @default(uuid())
   email         String      @unique
   name          String
   passwordHash  String      @map("password_hash")
+  phone         String?
+  whatsapp      String?
   role          UserRole    @default(USER)
   isActive      Boolean     @default(true) @map("is_active")
   emailVerified Boolean     @default(false) @map("email_verified")
@@ -53,6 +77,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
   auditLogs     AuditLog[]
+  notifications Notification[]
 
   @@index([email])
   @@index([role])
@@ -64,12 +89,20 @@ model Property {
   id            String         @id @default(uuid())
   title         String
   description   String         @db.Text
+  propertyType  PropertyType   @default(APARTMENT) @map("property_type")
   price         Decimal        @db.Decimal(10, 2)
-  location      String
-  address       String?
+  location      String         // City or primary location (for backward compatibility and search)
+  address       String?        // Street address
+  city          String?        // City name
+  state         String?        // State/Province
+  country       String?        // Country
+  postalCode    String?        @map("postal_code") // Postal/ZIP code
   bedrooms      Int
   bathrooms     Int
   squareFeet    Int?           @map("square_feet")
+  parkingSpaces Int            @default(0) @map("parking_spaces")
+  amenities     Json?          @db.JsonB
+  availableFrom DateTime?      @map("available_from")
   status        PropertyStatus @default(PENDING)
   ownerId       String         @map("owner_id")
   latitude      Decimal?       @db.Decimal(10, 8)
@@ -84,9 +117,11 @@ model Property {
 
   @@index([ownerId])
   @@index([status])
+  @@index([propertyType])
   @@index([price])
   @@index([location])
   @@index([bedrooms, bathrooms])
+  @@index([availableFrom])
   @@map("properties")
 }
 
@@ -122,6 +157,26 @@ model Favorite {
   @@index([userId])
   @@index([propertyId])
   @@map("favorites")
+}
+
+// Notification Model - User notifications
+model Notification {
+  id          String           @id @default(uuid())
+  userId      String           @map("user_id")
+  title       String
+  message     String           @db.Text
+  type        NotificationType @default(INFO)
+  isRead      Boolean          @default(false) @map("is_read")
+  propertyId  String?          @map("property_id")
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  // Relations
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
 }
 
 // Audit Log Model - Track admin actions and security events

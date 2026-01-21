@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Footer } from '@/components/layout/Footer'
 import { HomeIcon, SearchIcon, CheckIcon } from '@/components/icons/Icons'
@@ -13,12 +14,17 @@ interface Stats {
 }
 
 export default function Home() {
+  const router = useRouter()
   const [stats, setStats] = useState<Stats>({ total: 0, approved: 0, locations: 0 })
 
   useEffect(() => {
     fetch('/api/properties/stats')
       .then((res) => res.json())
-      .then((data) => setStats(data))
+      .then((data) => {
+        setStats(data)
+        // Update browser tab title with property count
+        document.title = `faqtpn - ${data.approved} Properties Available`
+      })
       .catch(console.error)
   }, [])
 
@@ -36,15 +42,16 @@ export default function Home() {
                 Discover thousands of rental properties in your area. 
                 From cozy studios to spacious family homes.
               </p>
+
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/properties">
-                  <Button variant="primary" size="lg" className="bg-white text-blue-600 hover:bg-gray-100 w-full sm:w-auto">
+                <Link href="/properties" className="w-full sm:w-auto">
+                  <Button variant="primary" size="lg" className="bg-orange-500 text-white hover:bg-orange-600 shadow-lg hover:shadow-xl transition-all w-full flex items-center justify-center">
                     <SearchIcon className="w-5 h-5 mr-2" />
                     Browse Properties
                   </Button>
                 </Link>
-                <Link href="/owner/properties/new">
-                  <Button variant="secondary" size="lg" className="border-2 border-white text-white hover:bg-white hover:text-blue-600 w-full sm:w-auto">
+                <Link href="/owner/properties/new" className="w-full sm:w-auto">
+                  <Button variant="secondary" size="lg" className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-blue-600 w-full flex items-center justify-center">
                     <HomeIcon className="w-5 h-5 mr-2" />
                     List Your Property
                   </Button>
@@ -78,7 +85,9 @@ export default function Home() {
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-4">
                 <HomeIcon className="w-8 h-8 text-blue-600" />
               </div>
-              <div className="text-4xl font-bold text-gray-900 mb-2">{stats.approved}+</div>
+              <div className="text-4xl font-bold text-gray-900 mb-2">
+                {stats.approved.toLocaleString()}
+              </div>
               <div className="text-gray-600">Active Properties</div>
             </div>
             <div className="text-center">
@@ -92,7 +101,9 @@ export default function Home() {
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-100 mb-4">
                 <SearchIcon className="w-8 h-8 text-purple-600" />
               </div>
-              <div className="text-4xl font-bold text-gray-900 mb-2">{stats.locations}+</div>
+              <div className="text-4xl font-bold text-gray-900 mb-2">
+                {stats.locations.toLocaleString()}
+              </div>
               <div className="text-gray-600">Locations Available</div>
             </div>
           </div>
@@ -104,7 +115,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Why Choose RentHub?
+              Why Choose faqtpn?
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
               We make finding and listing rental properties simple, secure, and efficient
@@ -246,16 +257,16 @@ export default function Home() {
             Ready to Find Your Next Home?
           </h2>
           <p className="text-xl text-blue-100 mb-8">
-            Join thousands of happy renters and property owners on RentHub
+            Join thousands of happy renters and property owners on faqtpn
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/properties">
-              <Button variant="primary" size="lg" className="bg-white text-blue-600 hover:bg-gray-100 w-full sm:w-auto">
+            <Link href="/properties" className="w-full sm:w-auto">
+              <Button variant="primary" size="lg" className="bg-white text-blue-600 hover:bg-gray-100 w-full">
                 Start Searching
               </Button>
             </Link>
-            <Link href="/register">
-              <Button variant="secondary" size="lg" className="border-2 border-white text-white hover:bg-white hover:text-blue-600 w-full sm:w-auto">
+            <Link href="/register" className="w-full sm:w-auto">
+              <Button variant="secondary" size="lg" className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-blue-600 w-full">
                 Sign Up Free
               </Button>
             </Link>

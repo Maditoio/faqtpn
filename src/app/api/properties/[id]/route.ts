@@ -25,6 +25,8 @@ export async function GET(
             id: true,
             name: true,
             email: true,
+            phone: true,
+            whatsapp: true,
           },
         },
         _count: {
@@ -81,9 +83,16 @@ export async function PATCH(
 
     const { id } = await params
 
-    // Find property
+    // Find property with favorites to notify users
     const property = await prisma.property.findUnique({
       where: { id },
+      include: {
+        favorites: {
+          include: {
+            user: true
+          }
+        }
+      }
     })
 
     if (!property) {
@@ -99,9 +108,10 @@ export async function PATCH(
     }
 
     const body = await req.json()
+    const { images, ...propertyData } = body
 
     // Validate input
-    const validationResult = propertyUpdateSchema.safeParse(body)
+    const validationResult = propertyUpdateSchema.safeParse(propertyData)
     
     if (!validationResult.success) {
       return NextResponse.json(
@@ -110,12 +120,59 @@ export async function PATCH(
       )
     }
 
+    // Track changes for notifications
+    const oldPrice = property.price
+    const oldStatus = property.status
+    const newPrice = validationResult.data.price
+    const newStatus = validationResult.data.status
+
+    // Handle image updates if provided
+    let imageUpdate = {}
+    if (images) {
+      // Get existing images from database
+      const existingImages = await prisma.propertyImage.findMany({
+        where: { propertyId: id },
+      })
+
+      // Delete all existing images
+      await prisma.propertyImage.deleteMany({
+        where: { propertyId: id },
+      })
+
+      // Create new images from both existing (kept) and new uploads
+      const allImages = [
+        ...images.existing.map((img: any, index: number) => ({
+          url: existingImages.find((ei: any) => ei.id === img.id)?.url || '',
+          isPrimary: img.isPrimary,
+          order: index,
+        })),
+        ...images.new.map((img: any, index: number) => ({
+          url: img.data,
+          isPrimary: img.isPrimary,
+          order: images.existing.length + index,
+        })),
+      ]
+
+      if (allImages.length > 0) {
+        imageUpdate = {
+          images: {
+            create: allImages,
+          },
+        }
+      }
+    }
+
     // Update property
     const updatedProperty = await prisma.property.update({
-      where: { id: params.id },
-      data: validationResult.data,
+      where: { id },
+      data: {
+        ...validationResult.data,
+        ...imageUpdate,
+      },
       include: {
-        images: true,
+        images: {
+          orderBy: { order: 'asc' },
+        },
         owner: {
           select: {
             id: true,
@@ -125,6 +182,49 @@ export async function PATCH(
         },
       },
     })
+
+    // Send notifications based on changes
+    const notifications = []
+
+    // Price drop notification (>10% decrease)
+    if (newPrice && oldPrice && newPrice < oldPrice) {
+      const percentageDecrease = ((Number(oldPrice) - Number(newPrice)) / Number(oldPrice)) * 100
+      if (percentageDecrease >= 10 && property.favorites.length > 0) {
+        const priceDropNotifications = property.favorites.map((favorite: any) =>
+          prisma.notification.create({
+            data: {
+              userId: favorite.userId,
+              title: '💰 Price Drop Alert!',
+              message: `Great news! The price for "${property.title}" has dropped from $${oldPrice} to $${newPrice} (${percentageDecrease.toFixed(0)}% off).`,
+              type: 'PRICE_DROP',
+              propertyId: property.id
+            }
+          })
+        )
+        notifications.push(...priceDropNotifications)
+      }
+    }
+
+    // Property back available notification (RENTED -> APPROVED)
+    if (oldStatus === 'RENTED' && newStatus === 'APPROVED' && property.favorites.length > 0) {
+      const availableNotifications = property.favorites.map((favorite: any) =>
+        prisma.notification.create({
+          data: {
+            userId: favorite.userId,
+            title: '🏠 Property Available Again!',
+            message: `Good news! "${property.title}" at ${property.location} is available for rent again.`,
+            type: 'PROPERTY_AVAILABLE',
+            propertyId: property.id
+          }
+        })
+      )
+      notifications.push(...availableNotifications)
+    }
+
+    // Send all notifications
+    if (notifications.length > 0) {
+      await Promise.all(notifications)
+    }
 
     return NextResponse.json({
       message: 'Property updated successfully',

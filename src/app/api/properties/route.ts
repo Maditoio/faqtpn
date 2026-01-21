@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
     const filters = {
       query: searchParams.get('query') || undefined,
       location: searchParams.get('location') || undefined,
+      propertyType: searchParams.get('propertyType') || undefined,
       minPrice: searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : undefined,
       maxPrice: searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined,
       bedrooms: searchParams.get('bedrooms') ? Number(searchParams.get('bedrooms')) : undefined,
@@ -32,7 +33,7 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    const { query, location, minPrice, maxPrice, bedrooms, bathrooms, page, limit } = validationResult.data
+    const { query, location, propertyType, minPrice, maxPrice, bedrooms, bathrooms, page, limit } = validationResult.data
 
     // Build where clause
     const where: any = {
@@ -48,6 +49,10 @@ export async function GET(req: NextRequest) {
 
     if (location) {
       where.location = { contains: location, mode: 'insensitive' }
+    }
+
+    if (propertyType) {
+      where.propertyType = propertyType
     }
 
     if (minPrice !== undefined || maxPrice !== undefined) {
@@ -129,9 +134,25 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
+    const { images, ...propertyData } = body
+
+    // Validate images
+    if (!images || images.length === 0) {
+      return NextResponse.json(
+        { error: 'At least one image is required' },
+        { status: 400 }
+      )
+    }
+
+    if (images.length > 15) {
+      return NextResponse.json(
+        { error: 'Maximum 15 images allowed' },
+        { status: 400 }
+      )
+    }
 
     // Validate input
-    const validationResult = propertySchema.safeParse(body)
+    const validationResult = propertySchema.safeParse(propertyData)
     
     if (!validationResult.success) {
       return NextResponse.json(
@@ -142,15 +163,24 @@ export async function POST(req: NextRequest) {
 
     const data = validationResult.data
 
-    // Create property
+    // Create property with images
     const property = await prisma.property.create({
       data: {
         ...data,
         ownerId: user.id,
         status: 'PENDING', // Requires admin approval
+        images: {
+          create: images.map((img: { data: string; isPrimary: boolean }, index: number) => ({
+            url: img.data,
+            isPrimary: img.isPrimary,
+            order: index,
+          })),
+        },
       },
       include: {
-        images: true,
+        images: {
+          orderBy: { order: 'asc' },
+        },
         owner: {
           select: {
             id: true,

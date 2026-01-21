@@ -16,6 +16,7 @@ export default function AdminDashboard() {
   const [properties, setProperties] = useState<any[]>([])
   const [users, setUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [actionLoading, setActionLoading] = useState<{ id: string; action: string } | null>(null)
   const [activeTab, setActiveTab] = useState<'properties' | 'users'>('properties')
 
   useEffect(() => {
@@ -48,6 +49,7 @@ export default function AdminDashboard() {
   }
 
   const handlePropertyAction = async (id: string, action: 'APPROVE' | 'SUSPEND' | 'DELETE') => {
+    setActionLoading({ id, action })
     try {
       const response = await fetch(`/api/admin/properties/${id}`, {
         method: 'PATCH',
@@ -56,10 +58,12 @@ export default function AdminDashboard() {
       })
 
       if (response.ok) {
-        fetchData()
+        await fetchData()
       }
     } catch (error) {
       console.error('Error updating property:', error)
+    } finally {
+      setActionLoading(null)
     }
   }
 
@@ -101,10 +105,25 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
+    <>
+      {/* Full-screen loading overlay for actions */}
+      {actionLoading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 flex flex-col items-center space-y-4">
+            <LoadingSpinner size="lg" />
+            <p className="text-gray-900 font-medium text-lg">
+              {actionLoading.action === 'APPROVE' && 'Approving property...'}
+              {actionLoading.action === 'SUSPEND' && 'Suspending property...'}
+              {actionLoading.action === 'DELETE' && 'Deleting property...'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header */}
+          <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
           <p className="text-gray-600 mt-1">Manage properties and users</p>
         </div>
@@ -185,7 +204,7 @@ export default function AdminDashboard() {
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="text-xl font-bold text-blue-600">
-                            ${property.price.toLocaleString()}/mo
+                            {new Intl.NumberFormat(undefined, { style: 'currency', currency: 'ZAR', minimumFractionDigits: 0 }).format(property.price)}/mo
                           </div>
                           <div className="text-sm text-gray-600">
                             {property.bedrooms} beds • {property.bathrooms} baths
@@ -288,8 +307,9 @@ export default function AdminDashboard() {
               ))
             )}
           </div>
-        )}
+        )}  
+        </div>
       </div>
-    </div>
+    </>
   )
 }

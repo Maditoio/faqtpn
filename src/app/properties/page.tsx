@@ -26,9 +26,9 @@ export default function PropertiesPage() {
   const [properties, setProperties] = useState<Property[]>([])
   const [popularLocations, setPopularLocations] = useState<Array<{ location: string; count: number }>>([])
   const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
   const [filters, setFilters] = useState({
     location: '',
+    propertyType: '',
     minPrice: '',
     maxPrice: '',
     bedrooms: '',
@@ -55,8 +55,8 @@ export default function PropertiesPage() {
     setLoading(true)
     try {
       const params = new URLSearchParams()
-      if (searchQuery) params.append('query', searchQuery)
       if (filters.location) params.append('location', filters.location)
+      if (filters.propertyType) params.append('propertyType', filters.propertyType)
       if (filters.minPrice) params.append('minPrice', filters.minPrice)
       if (filters.maxPrice) params.append('maxPrice', filters.maxPrice)
       if (filters.bedrooms) params.append('bedrooms', filters.bedrooms)
@@ -74,7 +74,6 @@ export default function PropertiesPage() {
 
   const handleLocationClick = (location: string) => {
     setFilters({ ...filters, location })
-    setSearchQuery('')
     setTimeout(() => fetchProperties(), 0)
   }
 
@@ -114,15 +113,33 @@ export default function PropertiesPage() {
           </h1>
 
           {/* Search Bar */}
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
-              <Input
+              <input
                 type="text"
-                placeholder="Search properties..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Enter location or area..."
+                value={filters.location}
+                onChange={(e) => setFilters({ ...filters, location: e.target.value })}
                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                className="w-full h-[42px] px-4 py-2 border border-gray-300 rounded-sm focus:border-orange-500 hover:border-orange-400 outline-none transition-colors text-gray-900 placeholder:text-gray-400"
               />
+            </div>
+            <div className="w-full sm:w-56">
+              <select
+                value={filters.propertyType}
+                onChange={(e) => setFilters({ ...filters, propertyType: e.target.value })}
+                className="w-full h-[42px] px-4 py-2 border border-gray-300 rounded-sm focus:border-orange-500 hover:border-orange-400 outline-none transition-colors text-gray-900"
+              >
+                <option value="">All Types</option>
+                <option value="APARTMENT">Apartment</option>
+                <option value="HOUSE">House</option>
+                <option value="TOWNHOUSE">Townhouse</option>
+                <option value="COTTAGE">Cottage</option>
+                <option value="BACKROOM">Backroom</option>
+                <option value="WAREHOUSE">Warehouse</option>
+                <option value="INDUSTRIAL_PROPERTY">Industrial</option>
+                <option value="COMMERCIAL_PROPERTY">Commercial</option>
+              </select>
             </div>
             <Button
               variant="primary"
@@ -191,12 +208,12 @@ export default function PropertiesPage() {
                     onClick={() => {
                       setFilters({
                         location: '',
+                        propertyType: '',
                         minPrice: '',
                         maxPrice: '',
                         bedrooms: '',
                         bathrooms: '',
                       })
-                      setSearchQuery('')
                       setTimeout(() => fetchProperties(), 0)
                     }}
                     className="text-sm text-blue-600 hover:text-blue-700"
@@ -206,20 +223,6 @@ export default function PropertiesPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Location
-                    </label>
-                    <Input
-                      type="text"
-                      placeholder="Enter location"
-                      value={filters.location}
-                      onChange={(e) =>
-                        setFilters({ ...filters, location: e.target.value })
-                      }
-                    />
-                  </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Price Range

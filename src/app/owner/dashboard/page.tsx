@@ -16,6 +16,8 @@ export default function OwnerDashboard() {
   const router = useRouter()
   const [properties, setProperties] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [rentingProperty, setRentingProperty] = useState<string | null>(null)
+  const [showContactBanner, setShowContactBanner] = useState(false)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -32,6 +34,14 @@ export default function OwnerDashboard() {
       const response = await fetch('/api/owner/properties')
       const data = await response.json()
       setProperties(data.properties || [])
+      
+      // Check if user has contact info
+      const profileResponse = await fetch('/api/profile')
+      if (profileResponse.ok) {
+        const profileData = await profileResponse.json()
+        const hasContactInfo = profileData.user.phone || profileData.user.whatsapp
+        setShowContactBanner(!hasContactInfo && data.properties.length > 0)
+      }
     } catch (error) {
       console.error('Error fetching properties:', error)
     } finally {
@@ -57,6 +67,32 @@ export default function OwnerDashboard() {
     }
   }
 
+  const handleMarkAsRented = async (id: string) => {
+    if (!confirm('Mark this property as rented? All users who favorited it will be notified that it\'s no longer available.')) {
+      return
+    }
+
+    setRentingProperty(id)
+    try {
+      const response = await fetch(`/api/properties/${id}/rent`, {
+        method: 'POST',
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        alert(`Property marked as rented! ${data.notificationsSent} users notified.`)
+        fetchProperties()
+      } else {
+        alert('Failed to mark property as rented')
+      }
+    } catch (error) {
+      console.error('Error marking property as rented:', error)
+      alert('Error marking property as rented')
+    } finally {
+      setRentingProperty(null)
+    }
+  }
+
   const getStatusVariant = (status: string) => {
     switch (status) {
       case 'APPROVED':
@@ -65,6 +101,8 @@ export default function OwnerDashboard() {
         return 'warning'
       case 'SUSPENDED':
         return 'danger'
+      case 'RENTED':
+        return 'default'
       default:
         return 'default'
     }
@@ -81,6 +119,49 @@ export default function OwnerDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Contact Info Banner */}
+        {showContactBanner && (
+          <Card className="mb-6 p-4 bg-blue-50 border-blue-200">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-blue-900 mb-1">
+                  Add Your Contact Information
+                </h3>
+                <p className="text-sm text-blue-800 mb-3">
+                  Help potential renters reach you easily! Add your phone number and WhatsApp to your profile so they can contact you directly about your properties.
+                </p>
+                <div className="flex gap-2">
+                  <Link href="/profile">
+                    <Button variant="primary" size="sm">
+                      Update Profile
+                    </Button>
+                  </Link>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setShowContactBanner(false)}
+                  >
+                    Dismiss
+                  </Button>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowContactBanner(false)}
+                className="flex-shrink-0 text-blue-600 hover:text-blue-800"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </Card>
+        )}
+
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
@@ -89,16 +170,23 @@ export default function OwnerDashboard() {
               Manage your property listings
             </p>
           </div>
-          <Link href="/owner/properties/new">
-            <Button variant="primary">
-              <PlusIcon className="w-5 h-5 mr-2" />
-              Add Property
-            </Button>
-          </Link>
+          <div className="flex gap-3">
+            <Link href="/owner/properties-status">
+              <Button variant="secondary">
+                View Status Breakdown
+              </Button>
+            </Link>
+            <Link href="/owner/properties/new">
+              <Button variant="primary">
+                <PlusIcon className="w-5 h-5 mr-2" />
+                Add Property
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card className="p-6">
             <div className="text-3xl font-bold text-gray-900">
               {properties.length}
@@ -110,6 +198,12 @@ export default function OwnerDashboard() {
               {properties.filter((p) => p.status === 'APPROVED').length}
             </div>
             <div className="text-gray-600 mt-1">Active Listings</div>
+          </Card>
+          <Card className="p-6">
+            <div className="text-3xl font-bold text-blue-600">
+              {properties.filter((p) => p.status === 'RENTED').length}
+            </div>
+            <div className="text-gray-600 mt-1">Rented</div>
           </Card>
           <Card className="p-6">
             <div className="text-3xl font-bold text-yellow-600">
@@ -168,7 +262,7 @@ export default function OwnerDashboard() {
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
                         <div className="text-2xl font-bold text-blue-600">
-                          ${property.price.toLocaleString()}/mo
+                          {new Intl.NumberFormat(undefined, { style: 'currency', currency: 'ZAR', minimumFractionDigits: 0 }).format(property.price)}/mo
                         </div>
                         <div className="text-sm text-gray-600">
                           {property.bedrooms} beds • {property.bathrooms} baths
@@ -187,21 +281,35 @@ export default function OwnerDashboard() {
                             View
                           </Button>
                         </Link>
-                        <Link href={`/owner/properties/${property.id}/edit`}>
-                          <IconButton
-                            icon={<EditIcon className="w-5 h-5" />}
-                            variant="secondary"
-                            size="md"
-                            label="Edit"
-                          />
-                        </Link>
-                        <IconButton
-                          icon={<TrashIcon className="w-5 h-5" />}
-                          variant="danger"
-                          size="md"
-                          onClick={() => handleDelete(property.id)}
-                          label="Delete"
-                        />
+                        {property.status === 'APPROVED' && (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => handleMarkAsRented(property.id)}
+                            disabled={rentingProperty === property.id}
+                          >
+                            {rentingProperty === property.id ? 'Processing...' : 'Mark as Rented'}
+                          </Button>
+                        )}
+                        {property.status !== 'RENTED' && (
+                          <>
+                            <Link href={`/owner/properties/${property.id}/edit`}>
+                              <IconButton
+                                icon={<EditIcon className="w-5 h-5" />}
+                                variant="secondary"
+                                size="md"
+                                label="Edit"
+                              />
+                            </Link>
+                            <IconButton
+                              icon={<TrashIcon className="w-5 h-5" />}
+                              variant="danger"
+                              size="md"
+                              onClick={() => handleDelete(property.id)}
+                              label="Delete"
+                            />
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>

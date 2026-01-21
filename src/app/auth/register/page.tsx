@@ -38,6 +38,18 @@ export default function RegisterPage() {
     if (formData.password.length < 8) {
       newErrors.password = 'Password must be at least 8 characters'
     }
+    
+    if (!/[A-Z]/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one uppercase letter'
+    }
+    
+    if (!/[a-z]/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one lowercase letter'
+    }
+    
+    if (!/[0-9]/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one number'
+    }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -67,7 +79,18 @@ export default function RegisterPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        setErrors({ general: data.error || 'Registration failed' })
+        // Display detailed validation errors if available
+        if (data.details && Array.isArray(data.details)) {
+          const validationErrors: Record<string, string> = {}
+          data.details.forEach((issue: any) => {
+            if (issue.path && issue.path.length > 0) {
+              validationErrors[issue.path[0]] = issue.message
+            }
+          })
+          setErrors(validationErrors)
+        } else {
+          setErrors({ general: data.error || 'Registration failed' })
+        }
       } else {
         router.push('/auth/login?registered=true')
       }
@@ -87,7 +110,7 @@ export default function RegisterPage() {
             <HomeIcon className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900">Create Account</h1>
-          <p className="text-gray-600 mt-2">Join RentHub today</p>
+          <p className="text-gray-600 mt-2">Join faqtpn today</p>
         </div>
 
         <Card className="p-8">
@@ -136,16 +159,21 @@ export default function RegisterPage() {
               </select>
             </div>
 
-            <Input
-              type="password"
-              name="password"
-              label="Password"
-              placeholder="••••••••"
-              value={formData.password}
-              onChange={handleChange}
-              error={errors.password}
-              required
-            />
+            <div>
+              <Input
+                type="password"
+                name="password"
+                label="Password"
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={handleChange}
+                error={errors.password}
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Must be 8+ characters with uppercase, lowercase, and number
+              </p>
+            </div>
 
             <Input
               type="password"

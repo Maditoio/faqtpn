@@ -12,11 +12,14 @@ interface PropertyCardProps {
     id: string
     title: string
     description: string
+    propertyType?: string
     price: number
     location: string
     bedrooms: number
     bathrooms: number
+    parkingSpaces?: number | null
     status: string
+    availableFrom?: string | null
     images?: Array<{ url: string; altText?: string | null }>
     _count?: { favorites: number }
   }
@@ -87,6 +90,15 @@ export function PropertyCard({
             </Badge>
           </div>
         )}
+
+        {/* Property Type Badge */}
+        {property.propertyType && (
+          <div className="absolute bottom-3 left-3">
+            <span className="px-2 py-1 bg-white bg-opacity-90 text-gray-700 text-xs font-medium rounded">
+              {property.propertyType.replace('_', ' ')}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Content */}
@@ -120,20 +132,28 @@ export function PropertyCard({
               <SquareIcon className="w-4 h-4" />
               {property.bathrooms} Baths
             </span>
-          </div>
-          {property._count && (
-            <span className="text-xs text-gray-500">
-              {property._count.favorites} favorites
+            <span className="flex items-center gap-1">
+              <SquareIcon className="w-4 h-4" />
+              {property.parkingSpaces || 0} Parking
             </span>
-          )}
+          </div>
         </div>
 
         {/* Price */}
         <div className="pt-3 border-t border-gray-200">
-          <span className="text-2xl font-bold text-blue-600">
-            ${property.price.toLocaleString()}
-          </span>
-          <span className="text-gray-600 text-sm">/month</span>
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-2xl font-bold text-blue-600">
+                {new Intl.NumberFormat(undefined, { style: 'currency', currency: 'ZAR', minimumFractionDigits: 0 }).format(property.price)}
+              </span>
+              <span className="text-gray-600 text-sm">/month</span>
+            </div>
+            {property.availableFrom && new Date(property.availableFrom) > new Date() && (
+              <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">
+                Available {new Date(property.availableFrom).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </Card>

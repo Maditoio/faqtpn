@@ -91,11 +91,38 @@ DATABASE_URL="postgresql://YOUR_USERNAME:YOUR_PASSWORD@localhost:5432/property_r
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="your-super-secret-key-change-this-in-production"
 
+# Google Maps API Key
+# Required for location autocomplete and address validation
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY="your-google-maps-api-key-here"
+
 # Application Settings
 NODE_ENV="development"
 ```
 
-**Important**: Replace `YOUR_USERNAME` and `YOUR_PASSWORD` with your PostgreSQL credentials.
+**Important**: 
+- Replace `YOUR_USERNAME` and `YOUR_PASSWORD` with your PostgreSQL credentials.
+- Get a Google Maps API key from [Google Cloud Console](https://console.cloud.google.com/google/maps-apis)
+
+#### Setting up Google Maps API
+
+The application uses Google Maps Places API for location validation and autocomplete. To set it up:
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Enable the following APIs:
+   - **Places API**
+   - **Maps JavaScript API**
+   - **Geocoding API**
+4. Create an API key:
+   - Go to "Credentials" → "Create Credentials" → "API Key"
+   - (Optional) Restrict the API key to your domain for security
+   - (Optional) Restrict the key to only the APIs listed above
+5. Copy the API key and add it to your `.env.local` file:
+   ```
+   NEXT_PUBLIC_GOOGLE_MAPS_API_KEY="YOUR_API_KEY_HERE"
+   ```
+
+**Note**: The `NEXT_PUBLIC_` prefix is required for the API key to be accessible in the browser.
 
 ### 3. Database Setup
 
@@ -164,6 +191,8 @@ See [TEST_SUMMARY.md](TEST_SUMMARY.md) for detailed test documentation.
 - ✅ User registration and authentication
 - ✅ Property CRUD operations
 - ✅ Advanced search and filtering
+- ✅ **Validated location data with Google Places API**
+- ✅ **Address autocomplete with structured data (city, state, country, etc.)**
 - ✅ Favorites system (many-to-many)
 - ✅ Admin approval workflow
 - ✅ Property status management

@@ -22,14 +22,25 @@ export const loginSchema = z.object({
 export const propertySchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters').max(200),
   description: z.string().min(20, 'Description must be at least 20 characters'),
+  propertyType: z.enum(['APARTMENT', 'HOUSE', 'TOWNHOUSE', 'COTTAGE', 'BACKROOM', 'WAREHOUSE', 'INDUSTRIAL_PROPERTY', 'COMMERCIAL_PROPERTY']),
   price: z.number().positive('Price must be positive').max(1000000),
   location: z.string().min(2, 'Location is required'),
   address: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  country: z.string().optional(),
+  postalCode: z.string().optional(),
   bedrooms: z.number().int().min(0).max(20),
   bathrooms: z.number().int().min(0).max(20),
   squareFeet: z.number().int().positive().optional(),
+  parkingSpaces: z.number().int().min(0).max(20).optional(),
+  amenities: z.array(z.string()).optional(),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
+  availableFrom: z.union([z.string(), z.date()]).transform(val => {
+    if (typeof val === 'string') return new Date(val)
+    return val
+  }).optional(),
 })
 
 export const propertyUpdateSchema = propertySchema.partial()
@@ -46,6 +57,7 @@ export const propertyImageSchema = z.object({
 export const propertySearchSchema = z.object({
   query: z.string().optional(),
   location: z.string().optional(),
+  propertyType: z.enum(['APARTMENT', 'HOUSE', 'TOWNHOUSE', 'COTTAGE', 'BACKROOM', 'WAREHOUSE', 'INDUSTRIAL_PROPERTY', 'COMMERCIAL_PROPERTY']).optional(),
   minPrice: z.number().optional(),
   maxPrice: z.number().optional(),
   bedrooms: z.number().int().optional(),
