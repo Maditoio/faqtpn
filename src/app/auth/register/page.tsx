@@ -19,6 +19,8 @@ export default function RegisterPage() {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
+  const [registeredEmail, setRegisteredEmail] = useState('')
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -92,13 +94,81 @@ export default function RegisterPage() {
           setErrors({ general: data.error || 'Registration failed' })
         }
       } else {
-        router.push('/auth/login?registered=true')
+        // Show success message instead of redirecting
+        setSuccess(true)
+        setRegisteredEmail(formData.email)
       }
     } catch (err) {
       setErrors({ general: 'An error occurred. Please try again.' })
     } finally {
       setLoading(false)
     }
+  }
+
+  // If registration successful, show success message
+  if (success) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-green-500 rounded-full mb-4">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900">Check Your Email! 📧</h1>
+          </div>
+
+          <Card className="p-8">
+            <div className="text-center space-y-4">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4">
+                <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              
+              <h2 className="text-xl font-semibold text-gray-900">Account Created Successfully!</h2>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
+                <p className="text-sm text-gray-700">
+                  <strong>We've sent a verification email to:</strong>
+                </p>
+                <p className="text-blue-600 font-medium mt-1">{registeredEmail}</p>
+              </div>
+
+              <div className="text-left space-y-3 text-sm text-gray-600">
+                <p className="flex items-start">
+                  <span className="text-blue-600 mr-2">1.</span>
+                  Check your inbox (and spam folder) for the verification email
+                </p>
+                <p className="flex items-start">
+                  <span className="text-blue-600 mr-2">2.</span>
+                  Click the verification link to activate your account
+                </p>
+                <p className="flex items-start">
+                  <span className="text-blue-600 mr-2">3.</span>
+                  Once verified, you can login to your account
+                </p>
+              </div>
+
+              <div className="pt-4 space-y-3">
+                <Button
+                  variant="primary"
+                  className="w-full"
+                  onClick={() => router.push('/auth/login')}
+                >
+                  Go to Login
+                </Button>
+                
+                <p className="text-xs text-gray-500">
+                  Didn't receive the email? Check your spam folder or contact support.
+                </p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/authorization'
+import cacheManager, { CacheKeys, CacheTTL, invalidateCache } from '@/lib/cache'
 
 /**
  * GET /api/favorites
@@ -14,25 +15,33 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const favorites = await prisma.favorite.findMany({
-      where: { userId: user.id },
-      include: {
-        property: {
+    const cacheKey = CacheKeys.userFavorites(user.id)
+    
+    const favorites = await cacheManager.getOrSet(
+      cacheKey,
+      async () => {
+        return await prisma.favorite.findMany({
+          where: { userId: user.id },
           include: {
-            images: {
-              orderBy: { order: 'asc' },
-            },
-            owner: {
-              select: {
-                id: true,
-                name: true,
+            property: {
+              include: {
+                images: {
+                  orderBy: { order: 'asc' },
+                },
+                owner: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
               },
             },
           },
-        },
+          orderBy: { createdAt: 'desc' },
+        })
       },
-      orderBy: { createdAt: 'desc' },
-    })
+      CacheTTL.SHORT // 5 minutes
+    )
 
     return NextResponse.json({ favorites })
   } catch (error) {
@@ -109,6 +118,10 @@ export async function POST(req: NextRequest) {
         },
       },
     })
+
+    // Invalidate caches
+    invalidateCache.user(user.id)
+    cacheManager.del(CacheKeys.propertyFavorites(propertyId))
 
     return NextResponse.json(
       { message: 'Property added to favorites', favorite },

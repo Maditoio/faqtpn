@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { prisma } from '@/lib/prisma'
+import { invalidateCache } from '@/lib/cache'
 
 export async function POST(
   request: Request,
@@ -58,6 +59,14 @@ export async function POST(
     )
 
     await Promise.all(notificationPromises)
+
+    // Invalidate caches
+    invalidateCache.property(id)
+    invalidateCache.owner(property.ownerId)
+    // Invalidate all users who had it favorited
+    property.favorites.forEach((fav: any) => {
+      invalidateCache.user(fav.userId)
+    })
 
     return NextResponse.json({
       success: true,

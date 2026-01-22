@@ -35,6 +35,9 @@ export default function PropertiesPage() {
     bathrooms: '',
   })
   const [showFilters, setShowFilters] = useState(true)
+  const [showAlertPrompt, setShowAlertPrompt] = useState(false)
+  const [searchPerformed, setSearchPerformed] = useState(false)
+  const [creatingAlert, setCreatingAlert] = useState(false)
 
   useEffect(() => {
     fetchProperties()
@@ -53,6 +56,7 @@ export default function PropertiesPage() {
 
   const fetchProperties = async () => {
     setLoading(true)
+    setShowAlertPrompt(false)
     try {
       const params = new URLSearchParams()
       if (filters.location) params.append('location', filters.location)
@@ -64,7 +68,14 @@ export default function PropertiesPage() {
 
       const response = await fetch(`/api/properties?${params}`)
       const data = await response.json()
-      setProperties(data.properties || [])
+      const results = data.properties || []
+      setProperties(results)
+      
+      // Show alert prompt if user searched with filters and got no/few results
+      const hasActiveFilters = filters.location || filters.propertyType || filters.minPrice || filters.bedrooms
+      if (searchPerformed && hasActiveFilters && results.length <= 2 && session) {
+        setShowAlertPrompt(true)
+      }
     } catch (error) {
       console.error('Error fetching properties:', error)
     } finally {
@@ -78,7 +89,64 @@ export default function PropertiesPage() {
   }
 
   const handleSearch = () => {
+    setSearchPerformed(true)
     fetchProperties()
+  }
+
+  const handleCreateAlert = async () => {
+    if (!session) {
+      alert('Please sign in to create alerts')
+      return
+    }
+
+    setCreatingAlert(true)
+    try {
+      // Enable consent and create alert in one flow
+      const consentResponse = await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ alertsConsent: true }),
+      })
+
+      if (!consentResponse.ok) {
+        throw new Error('Failed to enable alerts')
+      }
+
+      // Create alert from current search
+      const alertName = `${filters.bedrooms ? filters.bedrooms + '-bed ' : ''}${filters.propertyType || 'Properties'} in ${filters.location || 'your area'}`
+      
+      const alertData: any = {
+        name: alertName.trim(),
+        notifyEmail: true,
+        notifyInApp: true,
+      }
+
+      if (filters.location) alertData.location = filters.location
+      if (filters.propertyType) alertData.propertyType = filters.propertyType
+      if (filters.minPrice) alertData.minPrice = Number(filters.minPrice)
+      if (filters.maxPrice) alertData.maxPrice = Number(filters.maxPrice)
+      if (filters.bedrooms) alertData.minBedrooms = Number(filters.bedrooms)
+      if (filters.bathrooms) alertData.minBathrooms = Number(filters.bathrooms)
+
+      const alertResponse = await fetch('/api/alerts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(alertData),
+      })
+
+      if (alertResponse.ok) {
+        setShowAlertPrompt(false)
+        alert(`✓ Alert created! We'll notify you when ${alertName.toLowerCase()} become available.`)
+      } else {
+        const data = await alertResponse.json()
+        alert(data.error || 'Failed to create alert')
+      }
+    } catch (error) {
+      console.error('Error creating alert:', error)
+      alert('Failed to create alert. Please try again.')
+    } finally {
+      setCreatingAlert(false)
+    }
   }
 
   const handleFavoriteToggle = async (propertyId: string) => {
@@ -172,16 +240,108 @@ export default function PropertiesPage() {
               </div>
             ) : properties.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-gray-600 text-lg">No properties found</p>
-                <p className="text-gray-500 text-sm mt-2">
-                  Try adjusting your search criteria
+                <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <p className="text-gray-900 text-xl font-semibold mb-2">No properties found</p>
+                <p className="text-gray-500 text-sm mb-6">
+                  {searchPerformed ? 'No listings match your search criteria right now.' : 'Try adjusting your search criteria'}
                 </p>
+                
+                {/* Contextual Alert Prompt */}
+                {showAlertPrompt && (
+                  <div className="mt-8 max-w-md mx-auto bg-blue-50 border-2 border-blue-200 rounded-xl p-6 text-left">
+                    <div className="flex items-start gap-3 mb-4">
+                      <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-blue-900 text-lg mb-1">
+                          Want us to alert you?
+                        </h3>
+                        <p className="text-blue-800 text-sm mb-4">
+                          We'll notify you instantly when a property matching your search becomes available
+                          {filters.location && ` in ${filters.location}`}.
+                        </p>
+                        <div className="bg-white rounded-lg p-3 mb-4 border border-blue-100">
+                          <p className="text-xs font-medium text-gray-600 mb-2">Your search criteria:</p>
+                          <div className="space-y-1 text-sm text-gray-700">
+                            {filters.location && <div>• Location: {filters.location}</div>}
+                            {filters.propertyType && <div>• Type: {filters.propertyType}</div>}
+                            {filters.bedrooms && <div>• Bedrooms: {filters.bedrooms}+</div>}
+                            {filters.minPrice && <div>• Min Price: R{Number(filters.minPrice).toLocaleString()}</div>}
+                            {filters.maxPrice && <div>• Max Price: R{Number(filters.maxPrice).toLocaleString()}</div>}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="primary"
+                            onClick={handleCreateAlert}
+                            disabled={creatingAlert}
+                            className="flex-1"
+                          >
+                            {creatingAlert ? 'Creating...' : 'Yes, notify me'}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => setShowAlertPrompt(false)}
+                            disabled={creatingAlert}
+                          >
+                            No thanks
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <>
                 <div className="mb-4 text-sm text-gray-600">
-                  Found {properties.length} properties
+                  Found {properties.length} {properties.length === 1 ? 'property' : 'properties'}
                 </div>
+                
+                {/* Show alert prompt for few results (1-2) */}
+                {showAlertPrompt && properties.length <= 2 && (
+                  <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div className="flex-1">
+                        <p className="text-sm text-blue-900 font-medium mb-1">
+                          Only {properties.length} listing{properties.length > 1 ? 's' : ''} found
+                        </p>
+                        <p className="text-sm text-blue-800 mb-3">
+                          Get notified when more properties matching your search become available.
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={handleCreateAlert}
+                            disabled={creatingAlert}
+                          >
+                            {creatingAlert ? 'Creating...' : 'Create alert'}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowAlertPrompt(false)}
+                            disabled={creatingAlert}
+                          >
+                            Dismiss
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {properties.map((property) => (
                     <PropertyCard

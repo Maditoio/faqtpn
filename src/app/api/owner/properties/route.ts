@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/authorization'
+import cacheManager, { CacheKeys, CacheTTL } from '@/lib/cache'
 
 /**
  * GET /api/owner/properties
@@ -18,20 +19,28 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const properties = await prisma.property.findMany({
-      where: { ownerId: user.id },
-      include: {
-        images: {
-          orderBy: { order: 'asc' },
-        },
-        _count: {
-          select: {
-            favorites: true,
+    const cacheKey = CacheKeys.ownerProperties(user.id)
+    
+    const properties = await cacheManager.getOrSet(
+      cacheKey,
+      async () => {
+        return await prisma.property.findMany({
+          where: { ownerId: user.id },
+          include: {
+            images: {
+              orderBy: { order: 'asc' },
+            },
+            _count: {
+              select: {
+                favorites: true,
+              },
+            },
           },
-        },
+          orderBy: { createdAt: 'desc' },
+        })
       },
-      orderBy: { createdAt: 'desc' },
-    })
+      CacheTTL.SHORT // 5 minutes
+    )
 
     return NextResponse.json({ properties })
   } catch (error) {

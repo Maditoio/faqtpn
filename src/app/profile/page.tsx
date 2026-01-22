@@ -15,6 +15,8 @@ interface UserProfile {
   phone: string | null
   whatsapp: string | null
   role: string
+  alertsConsent: boolean
+  alertsConsentDate: string | null
   createdAt: string
 }
 
@@ -237,6 +239,77 @@ export default function ProfilePage() {
               </Button>
             </div>
           </form>
+        </Card>
+
+        {/* Alerts Settings Card */}
+        <Card className="p-6 mt-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Property Alerts</h3>
+          
+          <div className="space-y-4">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <h4 className="font-medium text-gray-900">Alert Notifications</h4>
+                  {profile.alertsConsent && (
+                    <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                      Enabled
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-gray-600">
+                  Receive notifications when new properties match your saved search criteria and preferred areas.
+                </p>
+                {profile.alertsConsentDate && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enabled on {new Date(profile.alertsConsentDate).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+              
+              <Button
+                variant={profile.alertsConsent ? 'secondary' : 'primary'}
+                size="sm"
+                onClick={async () => {
+                  if (profile.alertsConsent && !confirm('Are you sure you want to disable alerts? Your saved alerts will not send notifications.')) {
+                    return
+                  }
+                  
+                  try {
+                    const response = await fetch('/api/profile', {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ alertsConsent: !profile.alertsConsent }),
+                    })
+
+                    if (response.ok) {
+                      const data = await response.json()
+                      setProfile(data.user)
+                      alert(profile.alertsConsent ? 'Alerts disabled' : 'Alerts enabled!')
+                    }
+                  } catch (error) {
+                    console.error('Error updating alerts consent:', error)
+                    alert('Failed to update alerts setting')
+                  }
+                }}
+              >
+                {profile.alertsConsent ? 'Disable' : 'Enable'}
+              </Button>
+            </div>
+
+            {profile.alertsConsent && (
+              <div className="pt-4 border-t border-gray-200">
+                <a
+                  href="/alerts"
+                  className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
+                >
+                  Manage your alerts
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </a>
+              </div>
+            )}
+          </div>
         </Card>
 
         {/* Additional Info */}

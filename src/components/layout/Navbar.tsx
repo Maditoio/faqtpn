@@ -32,13 +32,13 @@ export function Navbar() {
             <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
               <HomeIcon className="w-6 h-6 text-white" />
             </div>
-            <span className="text-xl font-bold text-gray-900">RentHub</span>
+            <span className="text-xl font-bold text-gray-900">FAQTPN</span>
           </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-4">
             <Link href="/properties">
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="font-bold">
                 Browse Properties
               </Button>
             </Link>
@@ -55,8 +55,13 @@ export function Navbar() {
                         label="Favorites"
                       />
                     </Link>
+                    <Link href="/alerts">
+                      <Button variant="ghost" size="sm" className="font-bold">
+                        Alerts
+                      </Button>
+                    </Link>
                     <Link href="/dashboard">
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" className="font-bold">
                         Dashboard
                       </Button>
                     </Link>
@@ -65,7 +70,7 @@ export function Navbar() {
 
                 {session.user.role === 'HOME_OWNER' && (
                   <Link href="/owner/dashboard">
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" className="font-bold">
                       My Properties
                     </Button>
                   </Link>
@@ -73,7 +78,7 @@ export function Navbar() {
 
                 {session.user.role === 'SUPER_ADMIN' && (
                   <Link href="/admin/dashboard">
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" className="font-bold">
                       Admin Panel
                     </Button>
                   </Link>
@@ -88,7 +93,7 @@ export function Navbar() {
                           {session.user.name.charAt(0).toUpperCase()}
                         </span>
                       </div>
-                      <span className="hidden md:inline">{session.user.name}</span>
+                      <span className="hidden md:inline font-bold">{session.user.name}</span>
                     </button>
                   </Link>
                   <IconButton
@@ -103,12 +108,12 @@ export function Navbar() {
             ) : (
               <div className="flex items-center space-x-3">
                 <Link href="/auth/login">
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" className="font-bold">
                     Sign In
                   </Button>
                 </Link>
                 <Link href="/auth/register">
-                  <Button variant="primary" size="sm">
+                  <Button variant="primary" size="sm" className="font-bold">
                     Sign Up
                   </Button>
                 </Link>
@@ -140,7 +145,7 @@ export function Navbar() {
         <div className="md:hidden border-t border-gray-200">
           <div className="px-4 py-3 space-y-3">
             <Link href="/properties" className="block">
-              <Button variant="ghost" size="sm" className="w-full justify-start">
+              <Button variant="ghost" size="sm" className="w-full justify-start font-bold">
                 Browse Properties
               </Button>
             </Link>
@@ -150,12 +155,17 @@ export function Navbar() {
                 {session.user.role === 'USER' && (
                   <>
                     <Link href="/favorites" className="block">
-                      <Button variant="ghost" size="sm" className="w-full justify-start">
+                      <Button variant="ghost" size="sm" className="w-full justify-start font-bold">
                         Favorites
                       </Button>
                     </Link>
+                    <Link href="/alerts" className="block">
+                      <Button variant="ghost" size="sm" className="w-full justify-start font-bold">
+                        Alerts
+                      </Button>
+                    </Link>
                     <Link href="/dashboard" className="block">
-                      <Button variant="ghost" size="sm" className="w-full justify-start">
+                      <Button variant="ghost" size="sm" className="w-full justify-start font-bold">
                         Dashboard
                       </Button>
                     </Link>
@@ -164,7 +174,7 @@ export function Navbar() {
 
                 {session.user.role === 'HOME_OWNER' && (
                   <Link href="/owner/dashboard" className="block">
-                    <Button variant="ghost" size="sm" className="w-full justify-start">
+                    <Button variant="ghost" size="sm" className="w-full justify-start font-bold">
                       My Properties
                     </Button>
                   </Link>
@@ -172,24 +182,24 @@ export function Navbar() {
 
                 {session.user.role === 'SUPER_ADMIN' && (
                   <Link href="/admin/dashboard" className="block">
-                    <Button variant="ghost" size="sm" className="w-full justify-start">
+                    <Button variant="ghost" size="sm" className="w-full justify-start font-bold">
                       Admin Panel
                     </Button>
                   </Link>
                 )}
 
                 <div className="pt-3 border-t border-gray-200">
-                  <p className="text-sm text-gray-700 mb-2">{session.user.name}</p>
+                  <p className="text-sm text-gray-700 mb-2 font-bold">{session.user.name}</p>
                   <div className="space-y-2">
                     <Link href="/profile" className="block">
-                      <Button variant="ghost" size="sm" className="w-full justify-start">
+                      <Button variant="ghost" size="sm" className="w-full justify-start font-bold">
                         Profile Settings
                       </Button>
                     </Link>
                     <Button
                       variant="secondary"
                       size="sm"
-                      className="w-full"
+                      className="w-full font-bold"
                       onClick={handleSignOut}
                     >
                       Sign Out
@@ -200,12 +210,12 @@ export function Navbar() {
             ) : (
               <>
                 <Link href="/auth/login" className="block">
-                  <Button variant="ghost" size="sm" className="w-full">
+                  <Button variant="ghost" size="sm" className="w-full font-bold">
                     Sign In
                   </Button>
                 </Link>
                 <Link href="/auth/register" className="block">
-                  <Button variant="primary" size="sm" className="w-full">
+                  <Button variant="primary" size="sm" className="w-full font-bold">
                     Sign Up
                   </Button>
                 </Link>

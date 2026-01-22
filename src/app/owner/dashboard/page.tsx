@@ -10,6 +10,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { IconButton } from '@/components/ui/IconButton'
 import { PlusIcon, EditIcon, TrashIcon, HeartIcon } from '@/components/icons/Icons'
 import Link from 'next/link'
+import { OwnerPropertyNav } from '@/components/owner/OwnerPropertyNav'
 
 export default function OwnerDashboard() {
   const { data: session, status } = useSession()
@@ -118,6 +119,9 @@ export default function OwnerDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Secondary Navigation */}
+      <OwnerPropertyNav />
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Contact Info Banner */}
         {showContactBanner && (
@@ -163,26 +167,11 @@ export default function OwnerDashboard() {
         )}
 
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">My Properties</h1>
-            <p className="text-gray-600 mt-1">
-              Manage your property listings
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <Link href="/owner/properties-status">
-              <Button variant="secondary">
-                View Status Breakdown
-              </Button>
-            </Link>
-            <Link href="/owner/properties/new">
-              <Button variant="primary">
-                <PlusIcon className="w-5 h-5 mr-2" />
-                Add Property
-              </Button>
-            </Link>
-          </div>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">My Properties</h1>
+          <p className="text-gray-600 mt-1">
+            Manage your property listings
+          </p>
         </div>
 
         {/* Stats */}
@@ -264,11 +253,32 @@ export default function OwnerDashboard() {
                         <div className="text-2xl font-bold text-blue-600">
                           {new Intl.NumberFormat(undefined, { style: 'currency', currency: 'ZAR', minimumFractionDigits: 0 }).format(property.price)}/mo
                         </div>
-                        <div className="text-sm text-gray-600">
-                          {property.bedrooms} beds • {property.bathrooms} baths
+                        <div className="flex items-center gap-4 flex-wrap text-sm text-gray-600">
+                          <span className="flex items-center gap-1.5">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                              <rect x="4" y="4" width="16" height="16" rx="2" />
+                            </svg>
+                            {property.bedrooms} beds
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                              <rect x="4" y="4" width="16" height="16" rx="2" />
+                            </svg>
+                            {property.bathrooms} baths
+                          </span>
+                          {property.parkingSpaces !== undefined && property.parkingSpaces > 0 && (
+                            <span className="flex items-center gap-1.5">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <rect x="4" y="4" width="16" height="16" rx="2" />
+                              </svg>
+                              {property.parkingSpaces} parking
+                            </span>
+                          )}
                           {property._count && (
-                            <span className="ml-3">
-                              <HeartIcon className="w-4 h-4 inline mr-1" filled />
+                            <span className="flex items-center gap-1.5">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <rect x="4" y="4" width="16" height="16" rx="2" />
+                              </svg>
                               {property._count.favorites} favorites
                             </span>
                           )}

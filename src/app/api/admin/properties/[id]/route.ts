@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/authorization'
 import { adminActionSchema } from '@/lib/validations'
+import { invalidateCache } from '@/lib/cache'
+import { notifyMatchingAlerts } from '@/lib/alert-matcher'
+import { sendListingApprovalEmail, sendListingRejectionEmail } from '@/lib/email'
 
 /**
  * PATCH /api/admin/properties/[id]
@@ -104,24 +107,26 @@ export async function PATCH(
       notificationType = 'PROPERTY_APPROVED'
       
       // Also notify users who have favorited properties in the same location
-      const usersWithFavoritesInLocation = await prisma.user.findMany({
-        where: {
-          favorites: {
-            some: {
-              property: {
-                location: {
-                  contains: property.location,
-                  mode: 'insensitive'
-                },
-                status: 'APPROVED'
+      const usersWithFavoritesInLocation = property.location
+        ? await prisma.user.findMany({
+            where: {
+              favorites: {
+                some: {
+                  property: {
+                    location: {
+                      contains: property.location,
+                      mode: 'insensitive'
+                    },
+                    status: 'APPROVED'
+                  }
+                }
               }
+            },
+            select: {
+              id: true
             }
-          }
-        },
-        select: {
-          id: true
-        }
-      })
+          })
+        : []
 
       // Create notifications for users interested in this location
       const locationNotifications = usersWithFavoritesInLocation
@@ -141,6 +146,20 @@ export async function PATCH(
       if (locationNotifications.length > 0) {
         await Promise.all(locationNotifications)
       }
+
+      // Notify users with matching alerts
+      await notifyMatchingAlerts({
+        id: property.id,
+        title: property.title,
+        location: property.location,
+        city: property.city,
+        state: property.state,
+        address: property.address,
+        propertyType: property.propertyType,
+        price: property.price,
+        bedrooms: property.bedrooms,
+        bathrooms: property.bathrooms,
+      })
     } else if (action === 'SUSPEND' || action === 'DELETE') {
       notificationTitle = 'Property Status Update'
       notificationMessage = `Your property "${property.title}" has been ${action === 'SUSPEND' ? 'suspended' : 'removed'}.${reason ? ` Reason: ${reason}` : ''}`
@@ -158,6 +177,31 @@ export async function PATCH(
         },
       })
     }
+
+    // Send email notifications to property owner
+    const propertyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/properties/${id}`
+    
+    if (action === 'APPROVE' && updatedProperty.owner?.email) {
+      await sendListingApprovalEmail({
+        to: updatedProperty.owner.email,
+        ownerName: updatedProperty.owner.name,
+        propertyTitle: property.title,
+        propertyUrl,
+      })
+    } else if ((action === 'SUSPEND' || action === 'DELETE') && updatedProperty.owner?.email) {
+      await sendListingRejectionEmail({
+        to: updatedProperty.owner.email,
+        ownerName: updatedProperty.owner.name,
+        propertyTitle: property.title,
+        reason,
+        propertyUrl,
+      })
+    }
+
+    // Invalidate all relevant caches
+    invalidateCache.property(id)
+    invalidateCache.owner(property.ownerId)
+    invalidateCache.adminStats()
 
     return NextResponse.json({
       message: `Property ${action.toLowerCase()}d successfully`,

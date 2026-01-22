@@ -30,50 +30,45 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-blue-600 to-blue-800 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-                Find Your Perfect Home Today
-              </h1>
-              <p className="text-xl text-blue-100 mb-8">
-                Discover thousands of rental properties in your area. 
-                From cozy studios to spacious family homes.
-              </p>
+      {/* Hero Section with Background Image */}
+      <section className="relative h-[500px] md:h-[600px] overflow-hidden">
+        {/* Background Image */}
+        <div className="absolute inset-0">
+          <img
+            src="https://images.unsplash.com/photo-1609220136736-443140cffec6?w=1920&h=1080&fit=crop"
+            alt="Happy family in their new home"
+            className="w-full h-full object-cover"
+          />
+          {/* Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70"></div>
+        </div>
 
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/properties" className="w-full sm:w-auto">
-                  <Button variant="primary" size="lg" className="bg-orange-500 text-white hover:bg-orange-600 shadow-lg hover:shadow-xl transition-all w-full flex items-center justify-center">
-                    <SearchIcon className="w-5 h-5 mr-2" />
-                    Browse Properties
-                  </Button>
-                </Link>
-                <Link href="/owner/properties/new" className="w-full sm:w-auto">
-                  <Button variant="secondary" size="lg" className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-blue-600 w-full flex items-center justify-center">
-                    <HomeIcon className="w-5 h-5 mr-2" />
-                    List Your Property
-                  </Button>
-                </Link>
-              </div>
-            </div>
-            <div className="relative hidden md:block">
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
-                <img
-                  src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&h=400&fit=crop"
-                  alt="Beautiful home"
-                  className="rounded-lg shadow-2xl w-full h-80 object-cover"
-                />
-              </div>
+        {/* Content Overlay - Centered */}
+        <div className="relative z-10 h-full flex items-center justify-center">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight text-white drop-shadow-2xl">
+              Find Your Perfect Home Today
+            </h1>
+            <p className="text-xl md:text-2xl text-white/95 mb-10 drop-shadow-lg max-w-2xl mx-auto">
+              Discover thousands of rental properties in your area. 
+              From cozy studios to spacious family homes.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/properties">
+                <Button variant="primary" size="md" className="bg-orange-500 text-white hover:bg-orange-600 border-2 border-transparent shadow-xl hover:shadow-2xl transition-all w-full sm:w-auto flex items-center justify-center">
+                  <SearchIcon className="w-5 h-5 mr-2" />
+                  Browse Properties
+                </Button>
+              </Link>
+              <Link href="/list-property">
+                <Button variant="secondary" size="md" className="bg-white/20 backdrop-blur-md border-2 border-white text-white hover:bg-white hover:text-blue-600 shadow-xl w-full sm:w-auto flex items-center justify-center">
+                  <HomeIcon className="w-5 h-5 mr-2" />
+                  List Your Property
+                </Button>
+              </Link>
             </div>
           </div>
-        </div>
-        {/* Wave decoration */}
-        <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M0 120L60 110C120 100 240 80 360 70C480 60 600 60 720 65C840 70 960 80 1080 85C1200 90 1320 90 1380 90L1440 90V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" fill="white"/>
-          </svg>
         </div>
       </section>
 
@@ -111,7 +106,7 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20">
+      <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">

@@ -9,7 +9,7 @@ import { userUpdateSchema } from '@/lib/validations'
  */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser()
@@ -17,6 +17,8 @@ export async function PATCH(
     if (!user || user.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
+
+    const { id } = await params
 
     const body = await req.json()
     
@@ -32,7 +34,7 @@ export async function PATCH(
 
     // Update user
     const updatedUser = await prisma.user.update({
-      where: { id: params.id },
+      where: { id },
       data: validationResult.data,
       select: {
         id: true,
@@ -74,7 +76,7 @@ export async function PATCH(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser()
@@ -83,8 +85,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
+    const { id } = await params
+
     // Prevent admin from deleting themselves
-    if (user.id === params.id) {
+    if (user.id === id) {
       return NextResponse.json(
         { error: 'Cannot delete your own account' },
         { status: 400 }
@@ -92,7 +96,7 @@ export async function DELETE(
     }
 
     const targetUser = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id },
     })
 
     if (!targetUser) {
@@ -104,7 +108,7 @@ export async function DELETE(
 
     // Delete user (cascade will handle related records)
     await prisma.user.delete({
-      where: { id: params.id },
+      where: { id },
     })
 
     // Log admin action
@@ -113,7 +117,7 @@ export async function DELETE(
         action: 'USER_DELETED',
         userId: user.id,
         performedBy: user.id,
-        targetId: params.id,
+        targetId: id,
         details: `User deleted: ${targetUser.email}`,
       },
     })

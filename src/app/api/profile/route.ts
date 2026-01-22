@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { prisma } from '@/lib/prisma'
 import { userProfileSchema } from '@/lib/validations/profile'
+import cacheManager, { CacheKeys, CacheTTL, invalidateCache } from '@/lib/cache'
 
 // GET current user profile
 export async function GET() {
@@ -13,18 +14,28 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        whatsapp: true,
-        role: true,
-        createdAt: true,
-      }
-    })
+    const cacheKey = CacheKeys.userProfile(session.user.id)
+    
+    const user = await cacheManager.getOrSet(
+      cacheKey,
+      async () => {
+        return await prisma.user.findUnique({
+          where: { id: session.user.id },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            whatsapp: true,
+            role: true,
+            alertsConsent: true,
+            alertsConsentDate: true,
+            createdAt: true,
+          }
+        })
+      },
+      CacheTTL.MEDIUM // 10 minutes
+    )
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
@@ -51,7 +62,34 @@ export async function PATCH(request: Request) {
 
     const body = await request.json()
 
-    // Validate input
+    // Handle alerts consent separately (doesn't require full validation)
+    if ('alertsConsent' in body) {
+      const updatedUser = await prisma.user.update({
+        where: { id: session.user.id },
+        data: {
+          alertsConsent: body.alertsConsent,
+          alertsConsentDate: body.alertsConsent ? new Date() : null,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          whatsapp: true,
+          role: true,
+          alertsConsent: true,
+          alertsConsentDate: true,
+          createdAt: true,
+        }
+      })
+
+      // Invalidate user cache
+      invalidateCache.user(session.user.id)
+
+      return NextResponse.json({ user: updatedUser })
+    }
+
+    // Validate input for regular profile updates
     const validationResult = userProfileSchema.safeParse(body)
     
     if (!validationResult.success) {
@@ -78,9 +116,14 @@ export async function PATCH(request: Request) {
         phone: true,
         whatsapp: true,
         role: true,
+        alertsConsent: true,
+        alertsConsentDate: true,
         createdAt: true,
       }
     })
+
+    // Invalidate user cache
+    invalidateCache.user(session.user.id)
 
     return NextResponse.json({ user: updatedUser })
   } catch (error) {

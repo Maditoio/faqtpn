@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { hashPassword } from '@/lib/auth'
 import { registerSchema } from '@/lib/validations'
+import { sendVerificationEmail } from '@/lib/email'
+import crypto from 'crypto'
 
 /**
  * POST /api/auth/register
@@ -55,6 +57,32 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    // Generate verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex')
+    const expires = new Date(Date.now() + 86400000) // 24 hours from now
+
+    // Create verification token in database
+    await prisma.verificationToken.create({
+      data: {
+        identifier: email.toLowerCase(),
+        token: verificationToken,
+        expires,
+      },
+    })
+
+    // Send verification email (non-blocking - don't fail registration if email fails)
+    try {
+      await sendVerificationEmail({
+        to: email,
+        userName: name,
+        verificationToken,
+      })
+      console.log('✅ Verification email sent to:', email)
+    } catch (emailError) {
+      console.error('⚠️ Failed to send verification email:', emailError)
+      // Continue with registration - user can request resend later
+    }
+
     // Log user creation
     await prisma.auditLog.create({
       data: {
@@ -65,7 +93,10 @@ export async function POST(req: NextRequest) {
     })
 
     return NextResponse.json(
-      { message: 'User registered successfully', user },
+      { 
+        message: 'User registered successfully! Please check your email to verify your account.', 
+        user 
+      },
       { status: 201 }
     )
   } catch (error) {

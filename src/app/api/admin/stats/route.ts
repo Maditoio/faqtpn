@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { prisma } from '@/lib/prisma'
+import cacheManager, { CacheKeys, CacheTTL } from '@/lib/cache'
 
 export async function GET(request: Request) {
   try {
@@ -15,25 +16,31 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const range = searchParams.get('range') || 'month' // week, month, year, all
 
-    const now = new Date()
-    let startDate: Date
+    // Create cache key including range parameter
+    const cacheKey = `${CacheKeys.adminStats()}:${range}`
+    
+    const stats = await cacheManager.getOrSet(
+      cacheKey,
+      async () => {
+        const now = new Date()
+        let startDate: Date
 
-    switch (range) {
-      case 'week':
-        startDate = new Date(now)
-        startDate.setDate(now.getDate() - 7)
-        break
-      case 'month':
-        startDate = new Date(now)
-        startDate.setMonth(now.getMonth() - 1)
-        break
-      case 'year':
-        startDate = new Date(now)
-        startDate.setFullYear(now.getFullYear() - 1)
-        break
-      default:
-        startDate = new Date(0) // All time
-    }
+        switch (range) {
+          case 'week':
+            startDate = new Date(now)
+            startDate.setDate(now.getDate() - 7)
+            break
+          case 'month':
+            startDate = new Date(now)
+            startDate.setMonth(now.getMonth() - 1)
+            break
+          case 'year':
+            startDate = new Date(now)
+            startDate.setFullYear(now.getFullYear() - 1)
+            break
+          default:
+            startDate = new Date(0) // All time
+        }
 
     // Parallel queries for better performance
     const [
@@ -196,7 +203,7 @@ export async function GET(request: Request) {
       ? Math.round(((newPropertiesInRange - previousProperties) / previousProperties) * 100)
       : 0
 
-    return NextResponse.json({
+    return {
       overview: {
         totalUsers,
         totalOwners,
@@ -226,7 +233,12 @@ export async function GET(request: Request) {
         acc[item.role] = item._count
         return acc
       }, {} as Record<string, number>),
-    })
+      }
+      },
+      CacheTTL.LONG // 30 minutes cache for admin stats
+    )
+
+    return NextResponse.json(stats)
   } catch (error) {
     console.error('Error fetching admin stats:', error)
     return NextResponse.json(

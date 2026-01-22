@@ -43,6 +43,10 @@ export default function EditPropertyPage({ params }: EditPropertyPageProps) {
     squareFeet: '',
     availableFrom: '',
     parkingSpaces: '0',
+    waterPrepaid: false,
+    electricityPrepaid: false,
+    depositMonths: '1',
+    bankStatementsMonths: '3',
   })
 
   const availableAmenities = [
@@ -100,6 +104,10 @@ export default function EditPropertyPage({ params }: EditPropertyPageProps) {
           squareFeet: property.squareFeet?.toString() || '',
           availableFrom: property.availableFrom ? new Date(property.availableFrom).toISOString().split('T')[0] : '',
           parkingSpaces: property.parkingSpaces?.toString() || '0',
+          waterPrepaid: property.waterPrepaid || false,
+          electricityPrepaid: property.electricityPrepaid || false,
+          depositMonths: property.depositMonths?.toString() || '1',
+          bankStatementsMonths: property.bankStatementsMonths?.toString() || '3',
         })
         
         // Set amenities if they exist
@@ -129,7 +137,7 @@ export default function EditPropertyPage({ params }: EditPropertyPageProps) {
   }, [params])
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
@@ -210,6 +218,10 @@ export default function EditPropertyPage({ params }: EditPropertyPageProps) {
           availableFrom: formData.availableFrom ? new Date(formData.availableFrom).toISOString() : undefined,
           parkingSpaces: parseInt(formData.parkingSpaces) || 0,
           amenities: selectedAmenities,
+          waterPrepaid: formData.waterPrepaid,
+          electricityPrepaid: formData.electricityPrepaid,
+          depositMonths: parseInt(formData.depositMonths),
+          bankStatementsMonths: parseInt(formData.bankStatementsMonths),
           images: {
             existing: keptExistingImages.map(img => ({
               id: img.id,
@@ -400,6 +412,63 @@ export default function EditPropertyPage({ params }: EditPropertyPageProps) {
               value={formData.parkingSpaces}
               onChange={handleChange}
             />
+
+            {/* Rental Requirements Section */}
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Rental Requirements</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="waterPrepaid"
+                      checked={formData.waterPrepaid}
+                      onChange={(e) => setFormData({ ...formData, waterPrepaid: e.target.checked })}
+                      className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Water is Prepaid</span>
+                  </label>
+
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="electricityPrepaid"
+                      checked={formData.electricityPrepaid}
+                      onChange={(e) => setFormData({ ...formData, electricityPrepaid: e.target.checked })}
+                      className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Electricity is Prepaid</span>
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input
+                    type="number"
+                    name="depositMonths"
+                    label="Deposit (Months)"
+                    placeholder="1"
+                    min="1"
+                    max="12"
+                    value={formData.depositMonths}
+                    onChange={handleChange}
+                    required
+                  />
+
+                  <Input
+                    type="number"
+                    name="bankStatementsMonths"
+                    label="Bank Statements (Months)"
+                    placeholder="3"
+                    min="1"
+                    max="12"
+                    value={formData.bankStatementsMonths}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">

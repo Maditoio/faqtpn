@@ -1,8 +1,17 @@
+'use client'
+
 import Link from 'next/link'
 import { HomeIcon } from '@/components/icons/Icons'
 
 export function Footer() {
   const currentYear = new Date().getFullYear()
+
+  const handleCookieSettings = () => {
+    // Remove cookie consent to trigger banner again
+    localStorage.removeItem('cookieConsent')
+    // Reload page to show cookie banner
+    window.location.reload()
+  }
 
   return (
     <footer className="bg-gray-900 text-gray-300">
@@ -52,7 +61,7 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/owner/properties/new" className="hover:text-white transition-colors">
+                <Link href="/list-property" className="text-gray-400 hover:text-white transition-colors">
                   List Your Property
                 </Link>
               </li>
@@ -87,6 +96,14 @@ export function Footer() {
                 <Link href="/cookies" className="hover:text-white transition-colors">
                   Cookie Policy
                 </Link>
+              </li>
+              <li>
+                <button
+                  onClick={handleCookieSettings}
+                  className="hover:text-white transition-colors text-left"
+                >
+                  Cookie Settings
+                </button>
               </li>
               <li>
                 <Link href="/help" className="hover:text-white transition-colors">

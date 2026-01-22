@@ -13,7 +13,7 @@ export function Button({
   children,
   ...props
 }: ButtonProps) {
-  const baseStyles = 'font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed'
+  const baseStyles = 'font-bold rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed'
   
   const variants = {
     primary: 'bg-blue-600 text-white hover:bg-blue-700',

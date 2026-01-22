@@ -8,7 +8,7 @@ import { getCurrentUser } from '@/lib/authorization'
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser()
@@ -17,9 +17,11 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const { id } = await params
+
     // Verify property ownership
     const property = await prisma.property.findUnique({
-      where: { id: params.id },
+      where: { id },
     })
 
     if (!property) {
@@ -35,7 +37,7 @@ export async function GET(
 
     // Get favorites with user information
     const favorites = await prisma.favorite.findMany({
-      where: { propertyId: params.id },
+      where: { propertyId: id },
       include: {
         user: {
           select: {

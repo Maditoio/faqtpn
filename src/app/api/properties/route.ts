@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { propertySchema, propertySearchSchema } from '@/lib/validations'
+import { propertySchema, draftPropertySchema, propertySearchSchema } from '@/lib/validations'
 import { getCurrentUser } from '@/lib/authorization'
+import cacheManager, { CacheKeys, CacheTTL, invalidateCache } from '@/lib/cache'
+import { sendListingConfirmationEmail } from '@/lib/email'
 
 /**
  * GET /api/properties
@@ -72,42 +74,56 @@ export async function GET(req: NextRequest) {
     // Calculate pagination
     const skip = ((page || 1) - 1) * (limit || 20)
 
-    // Get properties
-    const [properties, total] = await Promise.all([
-      prisma.property.findMany({
-        where,
-        include: {
-          images: {
-            orderBy: { order: 'asc' },
-          },
-          owner: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          _count: {
-            select: {
-              favorites: true,
-            },
-          },
-        },
-        skip,
-        take: limit || 20,
-        orderBy: { createdAt: 'desc' },
-      }),
-      prisma.property.count({ where }),
-    ])
-
-    return NextResponse.json({
-      properties,
-      pagination: {
-        page: page || 1,
-        limit: limit || 20,
-        total,
-        totalPages: Math.ceil(total / (limit || 20)),
-      },
+    // Create cache key based on filters
+    const cacheKey = CacheKeys.propertiesList({ 
+      query, location, propertyType, minPrice, maxPrice, bedrooms, bathrooms, page, limit 
     })
+
+    // Try to get from cache
+    const result = await cacheManager.getOrSet(
+      cacheKey,
+      async () => {
+        // Get properties
+        const [properties, total] = await Promise.all([
+          prisma.property.findMany({
+            where,
+            include: {
+              images: {
+                orderBy: { order: 'asc' },
+              },
+              owner: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+              _count: {
+                select: {
+                  favorites: true,
+                },
+              },
+            },
+            skip,
+            take: limit || 20,
+            orderBy: { createdAt: 'desc' },
+          }),
+          prisma.property.count({ where }),
+        ])
+
+        return {
+          properties,
+          pagination: {
+            page: page || 1,
+            limit: limit || 20,
+            total,
+            totalPages: Math.ceil(total / (limit || 20)),
+          },
+        }
+      },
+      CacheTTL.SHORT // 5 minutes cache
+    )
+
+    return NextResponse.json(result)
   } catch (error) {
     console.error('Error fetching properties:', error)
     return NextResponse.json(
@@ -136,23 +152,30 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { images, ...propertyData } = body
 
-    // Validate images
-    if (!images || images.length === 0) {
-      return NextResponse.json(
-        { error: 'At least one image is required' },
-        { status: 400 }
-      )
+    // Determine if this is a draft or full submission
+    const isDraft = propertyData.status === 'DRAFT'
+
+    // Validate images only for non-drafts
+    if (!isDraft) {
+      if (!images || images.length === 0) {
+        return NextResponse.json(
+          { error: 'At least one image is required' },
+          { status: 400 }
+        )
+      }
+
+      if (images.length > 15) {
+        return NextResponse.json(
+          { error: 'Maximum 15 images allowed' },
+          { status: 400 }
+        )
+      }
     }
 
-    if (images.length > 15) {
-      return NextResponse.json(
-        { error: 'Maximum 15 images allowed' },
-        { status: 400 }
-      )
-    }
-
-    // Validate input
-    const validationResult = propertySchema.safeParse(propertyData)
+    // Validate input using appropriate schema
+    const validationResult = isDraft 
+      ? draftPropertySchema.safeParse(propertyData)
+      : propertySchema.safeParse(propertyData)
     
     if (!validationResult.success) {
       return NextResponse.json(
@@ -163,19 +186,24 @@ export async function POST(req: NextRequest) {
 
     const data = validationResult.data
 
-    // Create property with images
-    const property = await prisma.property.create({
-      data: {
-        ...data,
-        ownerId: user.id,
-        status: 'PENDING', // Requires admin approval
-        images: {
+    // Prepare image data
+    const imageCreate = images && images.length > 0
+      ? {
           create: images.map((img: { data: string; isPrimary: boolean }, index: number) => ({
             url: img.data,
             isPrimary: img.isPrimary,
             order: index,
           })),
-        },
+        }
+      : undefined
+
+    // Create property with images
+    const property = await prisma.property.create({
+      data: {
+        ...data,
+        ownerId: user.id,
+        status: data.status || (isDraft ? 'DRAFT' : 'PENDING'), // Drafts stay as DRAFT, others go to PENDING
+        ...(imageCreate && { images: imageCreate }),
       },
       include: {
         images: {
@@ -190,6 +218,20 @@ export async function POST(req: NextRequest) {
         },
       },
     })
+
+    // Invalidate caches after creating property
+    invalidateCache.property(property.id)
+    invalidateCache.owner(user.id)
+
+    // Send confirmation email for submitted properties (not drafts)
+    if (!isDraft && property.owner?.email) {
+      await sendListingConfirmationEmail({
+        to: property.owner.email,
+        ownerName: property.owner.name,
+        propertyTitle: property.title,
+        propertyId: property.id,
+      })
+    }
 
     return NextResponse.json(
       { message: 'Property created successfully', property },

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { propertyUpdateSchema } from '@/lib/validations'
 import { getCurrentUser } from '@/lib/authorization'
+import cacheManager, { CacheKeys, CacheTTL, invalidateCache } from '@/lib/cache'
 
 /**
  * GET /api/properties/[id]
@@ -14,28 +15,43 @@ export async function GET(
   try {
     const { id } = await params
     
-    const property = await prisma.property.findUnique({
-      where: { id },
-      include: {
-        images: {
-          orderBy: { order: 'asc' },
-        },
-        owner: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-            whatsapp: true,
+    // Try to get from cache first
+    const cacheKey = CacheKeys.propertyDetail(id)
+    const cachedProperty = cacheManager.get<any>(cacheKey)
+    
+    let property
+    
+    if (cachedProperty) {
+      property = cachedProperty
+    } else {
+      property = await prisma.property.findUnique({
+        where: { id },
+        include: {
+          images: {
+            orderBy: { order: 'asc' },
+          },
+          owner: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+              whatsapp: true,
+            },
+          },
+          _count: {
+            select: {
+              favorites: true,
+            },
           },
         },
-        _count: {
-          select: {
-            favorites: true,
-          },
-        },
-      },
-    })
+      })
+      
+      // Cache only if property exists and is approved (public)
+      if (property && property.status === 'APPROVED') {
+        cacheManager.set(cacheKey, property, CacheTTL.MEDIUM)
+      }
+    }
 
     if (!property) {
       return NextResponse.json(
@@ -226,6 +242,10 @@ export async function PATCH(
       await Promise.all(notifications)
     }
 
+    // Invalidate caches
+    invalidateCache.property(id)
+    invalidateCache.owner(property.ownerId)
+
     return NextResponse.json({
       message: 'Property updated successfully',
       property: updatedProperty,
@@ -277,6 +297,10 @@ export async function DELETE(
       where: { id },
       data: { status: 'DELETED' },
     })
+
+    // Invalidate caches
+    invalidateCache.property(id)
+    invalidateCache.owner(property.ownerId)
 
     // Log action if admin
     if (user.role === 'SUPER_ADMIN') {

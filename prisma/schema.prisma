@@ -17,6 +17,7 @@ enum UserRole {
 }
 
 enum PropertyStatus {
+  DRAFT         // Incomplete listing being created
   PENDING       // Awaiting admin approval
   APPROVED      // Active listing
   SUSPENDED     // Admin suspended
@@ -45,6 +46,9 @@ enum AuditAction {
   PROPERTY_DELETED
   LOGIN_SUCCESS
   LOGIN_FAILED
+  EMAIL_VERIFIED            // Email verification completed
+  PASSWORD_RESET_REQUESTED  // Password reset requested
+  PASSWORD_RESET            // Password reset completed
 }
 
 enum NotificationType {
@@ -54,6 +58,7 @@ enum NotificationType {
   PRICE_DROP                 // Price dropped on favorited property
   NEW_PROPERTY_LOCATION      // New property in favorite location
   PROPERTY_AVAILABLE         // Property is available again
+  ALERT_MATCH                // New property matches saved alert
   INFO                       // General info
 }
 
@@ -68,6 +73,8 @@ model User {
   role          UserRole    @default(USER)
   isActive      Boolean     @default(true) @map("is_active")
   emailVerified Boolean     @default(false) @map("email_verified")
+  alertsConsent Boolean     @default(false) @map("alerts_consent") // User consent for property alerts notifications
+  alertsConsentDate DateTime? @map("alerts_consent_date") // When user gave consent
   createdAt     DateTime    @default(now()) @map("created_at")
   updatedAt     DateTime    @updatedAt @map("updated_at")
 
@@ -78,6 +85,7 @@ model User {
   accounts      Account[]
   auditLogs     AuditLog[]
   notifications Notification[]
+  propertyAlerts PropertyAlert[]
 
   @@index([email])
   @@index([role])
@@ -88,21 +96,28 @@ model User {
 model Property {
   id            String         @id @default(uuid())
   title         String
-  description   String         @db.Text
-  propertyType  PropertyType   @default(APARTMENT) @map("property_type")
-  price         Decimal        @db.Decimal(10, 2)
-  location      String         // City or primary location (for backward compatibility and search)
+  description   String?        @db.Text
+  propertyType  PropertyType?  @default(APARTMENT) @map("property_type")
+  price         Decimal?       @db.Decimal(10, 2)
+  location      String?        // City or primary location (for backward compatibility and search)
   address       String?        // Street address
   city          String?        // City name
   state         String?        // State/Province
   country       String?        // Country
   postalCode    String?        @map("postal_code") // Postal/ZIP code
-  bedrooms      Int
-  bathrooms     Int
+  bedrooms      Int?
+  bathrooms     Int?
   squareFeet    Int?           @map("square_feet")
   parkingSpaces Int            @default(0) @map("parking_spaces")
   amenities     Json?          @db.JsonB
   availableFrom DateTime?      @map("available_from")
+  
+  // Rental requirements
+  waterPrepaid        Boolean  @default(false) @map("water_prepaid")
+  electricityPrepaid  Boolean  @default(false) @map("electricity_prepaid")
+  depositMonths       Int      @default(1) @map("deposit_months")
+  bankStatementsMonths Int     @default(3) @map("bank_statements_months")
+  
   status        PropertyStatus @default(PENDING)
   ownerId       String         @map("owner_id")
   latitude      Decimal?       @db.Decimal(10, 8)
@@ -241,4 +256,38 @@ model VerificationToken {
 
   @@unique([identifier, token])
   @@map("verification_tokens")
+}
+
+// Property Alert Model - Saved searches for notifications
+model PropertyAlert {
+  id                String       @id @default(uuid())
+  userId            String       @map("user_id")
+  name              String       // User-defined name for the alert
+  
+  // Search criteria
+  location          String?      // City or area
+  propertyType      PropertyType?
+  minPrice          Decimal?     @db.Decimal(10, 2)
+  maxPrice          Decimal?     @db.Decimal(10, 2)
+  minBedrooms       Int?
+  minBathrooms      Int?
+  
+  // Alert settings
+  isActive          Boolean      @default(true) @map("is_active")
+  notifyEmail       Boolean      @default(true) @map("notify_email")
+  notifyInApp       Boolean      @default(true) @map("notify_in_app")
+  
+  // Metadata
+  lastTriggered     DateTime?    @map("last_triggered")
+  matchCount        Int          @default(0) @map("match_count")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isActive])
+  @@index([location])
+  @@map("property_alerts")
 }
