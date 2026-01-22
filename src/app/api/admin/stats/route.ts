@@ -206,10 +206,10 @@ export async function GET(request: Request) {
         totalProperties,
         totalRegularUsers: totalUsers - totalOwners,
         totalFavorites,
-        totalContacts,
         averagePrice: Math.round(Number(averagePropertyPrice._avg.price) || 0),
       },
-      sttes: {
+      statusBreakdown,
+      rates: {
         approvalRate,
         rejectionRate,
         occupancyRate,
