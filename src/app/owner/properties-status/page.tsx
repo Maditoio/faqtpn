@@ -456,8 +456,8 @@ export default function PropertiesStatusPage() {
                           </span>
                         </div>
                         <div className="mt-2 text-xs text-gray-400">
-                          Created: {new Date(property.createdAt).toLocaleDateString()} · 
-                          Updated: {new Date(property.updatedAt).toLocaleDateString()}
+                          Created: {new Date(property.created_at).toLocaleDateString()} · 
+                          Updated: {new Date(property.updated_at).toLocaleDateString()}
                         </div>
                       </div>
                       <div className="ml-6 flex-shrink-0">

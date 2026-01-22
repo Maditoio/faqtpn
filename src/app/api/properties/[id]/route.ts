@@ -203,7 +203,7 @@ export async function PATCH(
     const notifications = []
 
     // Price drop notification (>10% decrease)
-    if (newPrice && oldPrice && newPrice < oldPrice) {
+    if (newPrice && oldPrice && newPrice < Number(oldPrice)) {
       const percentageDecrease = ((Number(oldPrice) - Number(newPrice)) / Number(oldPrice)) * 100
       if (percentageDecrease >= 10 && property.favorites.length > 0) {
         const priceDropNotifications = property.favorites.map((favorite: any) =>

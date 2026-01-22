@@ -52,7 +52,7 @@ export async function PATCH(
         action: 'USER_UPDATED',
         userId: user.id,
         performedBy: user.id,
-        targetId: params.id,
+        targetId: id,
         details: `User updated: ${updatedUser.email}`,
       },
     })

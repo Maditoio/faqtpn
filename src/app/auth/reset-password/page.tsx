@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -238,18 +240,6 @@ export default function ResetPasswordPage() {
               </p>
             </div>
           </div>
-        )}
-      </div>
-    </div>
-  )
-}
-              type="submit"
-              disabled={loading}
-              className="w-full"
-            >
-              {loading ? 'Resetting...' : 'Reset Password'}
-            </Button>
-          </form>
         )}
       </div>
     </div>

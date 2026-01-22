@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import React, { useState, useEffect } from 'react'
 import { PropertyCard } from '@/components/properties/PropertyCard'
 import { Input } from '@/components/ui/Input'
@@ -287,7 +289,7 @@ export default function PropertiesPage() {
                             {creatingAlert ? 'Creating...' : 'Yes, notify me'}
                           </Button>
                           <Button
-                            variant="outline"
+                            variant="secondary"
                             onClick={() => setShowAlertPrompt(false)}
                             disabled={creatingAlert}
                           >

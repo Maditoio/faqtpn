@@ -53,7 +53,6 @@ export async function GET(request: Request) {
       topOwners,
       topLocations,
       totalFavorites,
-      totalContacts,
       propertiesByMonth,
       usersByRole,
       rentedProperties,
@@ -103,9 +102,6 @@ export async function GET(request: Request) {
 
       // Total favorites
       prisma.favorite.count(),
-
-      // Total property contacts/views
-      prisma.propertyContact.count(),
 
       // Properties created by month (last 12 months)
       prisma.$queryRaw`
@@ -210,7 +206,6 @@ export async function GET(request: Request) {
         totalProperties,
         totalRegularUsers: totalUsers - totalOwners,
         totalFavorites,
-        totalContacts,
         averagePrice: Math.round(Number(averagePropertyPrice._avg.price) || 0),
       },
       statusBreakdown,

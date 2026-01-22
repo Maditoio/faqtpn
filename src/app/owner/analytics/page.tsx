@@ -100,13 +100,13 @@ export default function OwnerAnalytics() {
   })
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, 'success' | 'warning' | 'error' | 'info'> = {
+    const variants: Record<string, 'success' | 'warning' | 'danger' | 'info'> = {
       APPROVED: 'success',
       PENDING: 'warning',
       RENTED: 'info',
       DRAFT: 'warning',
-      SUSPENDED: 'error',
-      DELETED: 'error',
+      SUSPENDED: 'danger',
+      DELETED: 'danger',
     }
     return <Badge variant={variants[status] || 'info'}>{status}</Badge>
   }

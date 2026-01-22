@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { prisma } from '@/lib/prisma'
+import { PropertyStatus } from '@prisma/client'
 
 export async function GET(request: Request) {
   try {
@@ -23,7 +24,7 @@ export async function GET(request: Request) {
     // Build where clause
     const where = {
       ...(isAdmin ? {} : { ownerId: userId }),
-      ...(statusFilter !== 'ALL' ? { status: statusFilter } : {}),
+      ...(statusFilter !== 'ALL' ? { status: statusFilter as PropertyStatus } : {}),
     }
 
     // Get total count

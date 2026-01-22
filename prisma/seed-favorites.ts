@@ -78,7 +78,7 @@ async function main() {
       userId: admin.id,
       title: 'New Property Pending Approval',
       message: 'A new property listing is waiting for your review.',
-      type: 'ADMIN'
+      type: 'INFO'
     }
   })
 
