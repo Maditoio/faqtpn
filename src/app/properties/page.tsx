@@ -289,7 +289,7 @@ export default function PropertiesPage() {
                             {creatingAlert ? 'Creating...' : 'Yes, notify me'}
                           </Button>
                           <Button
-                            variant="outline"
+                            variant="secondary"
                             onClick={() => setShowAlertPrompt(false)}
                             disabled={creatingAlert}
                           >
