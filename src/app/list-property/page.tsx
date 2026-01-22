@@ -69,7 +69,7 @@ export default function ListPropertyPage() {
       {/* Why Choose Us Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <h2 className="text-4xl font-bold text-center text-gray-900 mb-4">
-          Why List With faqtpn?
+          Why List With Faqtpn?
         </h2>
         <p className="text-xl text-center text-gray-600 mb-12 max-w-3xl mx-auto">
           We make property rental simple, fast, and profitable. Here's what makes us different.

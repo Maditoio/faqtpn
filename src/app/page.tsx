@@ -23,7 +23,7 @@ export default function Home() {
       .then((data) => {
         setStats(data)
         // Update browser tab title with property count
-        document.title = `faqtpn - ${data.approved} Properties Available`
+        document.title = `Faqtpn - ${data.approved} Properties Available`
       })
       .catch(console.error)
   }, [])
@@ -110,7 +110,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Why Choose faqtpn?
+              Why Choose Faqtpn?
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
               We make finding and listing rental properties simple, secure, and efficient
@@ -252,7 +252,7 @@ export default function Home() {
             Ready to Find Your Next Home?
           </h2>
           <p className="text-xl text-blue-100 mb-8">
-            Join thousands of happy renters and property owners on faqtpn
+            Join thousands of happy renters and property owners on Faqtpn
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/properties" className="w-full sm:w-auto">

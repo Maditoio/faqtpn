@@ -70,14 +70,26 @@ export default function LoginPage() {
               required
             />
 
-            <Input
-              type="password"
-              label="Password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                <Link 
+                  href="/auth/forgot-password" 
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              <Input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
 
             <Button
               type="submit"

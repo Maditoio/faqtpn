@@ -1,7 +1,7 @@
 import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM_EMAIL = 'faqtpn <onboarding@resend.dev>'
+const FROM_EMAIL = 'Faqtpn <onboarding@resend.dev>'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
 // Log configuration on startup
@@ -29,7 +29,7 @@ export async function sendVerificationEmail(params: {
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: [params.to],
-      subject: 'Verify your email address - faqtpn',
+      subject: 'Verify your email address - Faqtpn',
       html: `
         <!DOCTYPE html>
         <html>
@@ -45,7 +45,7 @@ export async function sendVerificationEmail(params: {
                   <!-- Header -->
                   <tr>
                     <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px; text-align: center;">
-                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.5px;">faqtpn</h1>
+                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.5px;">Faqtpn</h1>
                       <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">Property Rental Platform</p>
                     </td>
                   </tr>
@@ -53,14 +53,14 @@ export async function sendVerificationEmail(params: {
                   <!-- Content -->
                   <tr>
                     <td style="padding: 40px;">
-                      <h2 style="color: #1a1a1a; font-size: 24px; font-weight: 600; margin: 0 0 20px 0;">Welcome to faqtpn</h2>
+                      <h2 style="color: #1a1a1a; font-size: 24px; font-weight: 600; margin: 0 0 20px 0;">Welcome to Faqtpn</h2>
                       
                       <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0;">
                         Hi <strong>${params.userName}</strong>,
                       </p>
                       
                       <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
-                        Thank you for creating an account with faqtpn. To complete your registration and access all features, please verify your email address by clicking the button below.
+                        Thank you for creating an account with Faqtpn. To complete your registration and access all features, please verify your email address by clicking the button below.
                       </p>
                       
                       <!-- CTA Button -->
@@ -88,7 +88,7 @@ export async function sendVerificationEmail(params: {
                         <strong>Important:</strong> This verification link will expire in 24 hours.
                       </p>
                       <p style="color: #9b9b9b; font-size: 12px; line-height: 1.5; margin: 0;">
-                        If you didn't create an account with faqtpn, please disregard this email.
+                        If you didn't create an account with Faqtpn, please disregard this email.
                       </p>
                     </td>
                   </tr>
@@ -97,7 +97,7 @@ export async function sendVerificationEmail(params: {
                   <tr>
                     <td style="padding: 20px; text-align: center; background-color: #ffffff;">
                       <p style="color: #9b9b9b; font-size: 12px; margin: 0;">
-                        © ${new Date().getFullYear()} faqtpn. All rights reserved.
+                        © ${new Date().getFullYear()} Faqtpn. All rights reserved.
                       </p>
                     </td>
                   </tr>
@@ -137,7 +137,7 @@ export async function sendPasswordResetEmail(params: {
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: [params.to],
-      subject: 'Password Reset Request - faqtpn',
+      subject: 'Password Reset Request - Faqtpn',
       html: `
         <!DOCTYPE html>
         <html>
@@ -153,7 +153,7 @@ export async function sendPasswordResetEmail(params: {
                   <!-- Header -->
                   <tr>
                     <td style="background: #dc3545; padding: 40px; text-align: center;">
-                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.5px;">faqtpn</h1>
+                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.5px;">Faqtpn</h1>
                       <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">Property Rental Platform</p>
                     </td>
                   </tr>
@@ -211,7 +211,7 @@ export async function sendPasswordResetEmail(params: {
                   <tr>
                     <td style="padding: 20px; text-align: center; background-color: #ffffff;">
                       <p style="color: #9b9b9b; font-size: 12px; margin: 0;">
-                        © ${new Date().getFullYear()} faqtpn. All rights reserved.
+                        © ${new Date().getFullYear()} Faqtpn. All rights reserved.
                       </p>
                     </td>
                   </tr>
@@ -257,7 +257,7 @@ export async function sendAlertEmail(params: {
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: [params.to],
-      subject: `New Property Alert: ${params.propertyTitle} - faqtpn`,
+      subject: `New Property Alert: ${params.propertyTitle} - Faqtpn`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -273,7 +273,7 @@ export async function sendAlertEmail(params: {
                   <!-- Header -->
                   <tr>
                     <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px; text-align: center;">
-                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.5px;">faqtpn</h1>
+                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.5px;">Faqtpn</h1>
                       <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">New Property Alert</p>
                     </td>
                   </tr>
@@ -341,7 +341,7 @@ export async function sendAlertEmail(params: {
                   <tr>
                     <td style="padding: 20px; text-align: center; background-color: #ffffff;">
                       <p style="color: #9b9b9b; font-size: 12px; margin: 0;">
-                        © ${new Date().getFullYear()} faqtpn. All rights reserved.
+                        © ${new Date().getFullYear()} Faqtpn. All rights reserved.
                       </p>
                     </td>
                   </tr>
@@ -382,7 +382,7 @@ export async function sendEnquiryReplyEmail(params: {
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: [params.to],
-      subject: `Reply to your enquiry: ${params.propertyTitle} - faqtpn`,
+      subject: `Reply to your enquiry: ${params.propertyTitle} - Faqtpn`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -398,7 +398,7 @@ export async function sendEnquiryReplyEmail(params: {
                   <!-- Header -->
                   <tr>
                     <td style="background: #28a745; padding: 40px; text-align: center;">
-                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.5px;">faqtpn</h1>
+                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.5px;">Faqtpn</h1>
                       <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">You have a reply</p>
                     </td>
                   </tr>
@@ -453,7 +453,7 @@ export async function sendEnquiryReplyEmail(params: {
                   <tr>
                     <td style="padding: 20px; text-align: center; background-color: #ffffff;">
                       <p style="color: #9b9b9b; font-size: 12px; margin: 0;">
-                        © ${new Date().getFullYear()} faqtpn. All rights reserved.
+                        © ${new Date().getFullYear()} Faqtpn. All rights reserved.
                       </p>
                     </td>
                   </tr>
@@ -498,7 +498,7 @@ export async function sendListingConfirmationEmail(params: {
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: [params.to],
-      subject: `Listing Submitted: ${params.propertyTitle} - faqtpn`,
+      subject: `Listing Submitted: ${params.propertyTitle} - Faqtpn`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -514,7 +514,7 @@ export async function sendListingConfirmationEmail(params: {
                   <!-- Header -->
                   <tr>
                     <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px; text-align: center;">
-                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.5px;">faqtpn</h1>
+                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.5px;">Faqtpn</h1>
                       <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">Property Listing</p>
                     </td>
                   </tr>
@@ -581,7 +581,7 @@ export async function sendListingConfirmationEmail(params: {
                   <tr>
                     <td style="padding: 20px; text-align: center; background-color: #ffffff;">
                       <p style="color: #9b9b9b; font-size: 12px; margin: 0;">
-                        © ${new Date().getFullYear()} faqtpn. All rights reserved.
+                        © ${new Date().getFullYear()} Faqtpn. All rights reserved.
                       </p>
                     </td>
                   </tr>
@@ -620,7 +620,7 @@ export async function sendListingApprovalEmail(params: {
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: [params.to],
-      subject: `Your listing is now live: ${params.propertyTitle} - faqtpn`,
+      subject: `Your listing is now live: ${params.propertyTitle} - Faqtpn`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -636,7 +636,7 @@ export async function sendListingApprovalEmail(params: {
                   <!-- Header -->
                   <tr>
                     <td style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); padding: 40px; text-align: center;">
-                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.5px;">faqtpn</h1>
+                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.5px;">Faqtpn</h1>
                       <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">Your Listing is Live</p>
                     </td>
                   </tr>
@@ -706,7 +706,7 @@ export async function sendListingApprovalEmail(params: {
                   <tr>
                     <td style="padding: 20px; text-align: center; background-color: #ffffff;">
                       <p style="color: #9b9b9b; font-size: 12px; margin: 0;">
-                        © ${new Date().getFullYear()} faqtpn. All rights reserved.
+                        © ${new Date().getFullYear()} Faqtpn. All rights reserved.
                       </p>
                     </td>
                   </tr>
@@ -746,7 +746,7 @@ export async function sendListingRejectionEmail(params: {
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: [params.to],
-      subject: `Action Required: ${params.propertyTitle} - faqtpn`,
+      subject: `Action Required: ${params.propertyTitle} - Faqtpn`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -762,7 +762,7 @@ export async function sendListingRejectionEmail(params: {
                   <!-- Header -->
                   <tr>
                     <td style="background: #dc3545; padding: 40px; text-align: center;">
-                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.5px;">faqtpn</h1>
+                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.5px;">Faqtpn</h1>
                       <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">Listing Requires Attention</p>
                     </td>
                   </tr>
@@ -832,7 +832,7 @@ export async function sendListingRejectionEmail(params: {
                   <tr>
                     <td style="padding: 20px; text-align: center; background-color: #ffffff;">
                       <p style="color: #9b9b9b; font-size: 12px; margin: 0;">
-                        © ${new Date().getFullYear()} faqtpn. All rights reserved.
+                        © ${new Date().getFullYear()} Faqtpn. All rights reserved.
                       </p>
                     </td>
                   </tr>

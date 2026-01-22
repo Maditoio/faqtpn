@@ -23,7 +23,7 @@ export function Footer() {
               <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
                 <HomeIcon className="w-6 h-6 text-white" />
               </div>
-              <span className="text-xl font-bold text-white">faqtpn</span>
+              <span className="text-xl font-bold text-white">Faqtpn</span>
             </div>
             <p className="text-gray-400 mb-4 max-w-md">
               Your trusted platform for finding and listing rental properties. 
@@ -118,7 +118,7 @@ export function Footer() {
         <div className="mt-12 pt-8 border-t border-gray-800">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400 text-sm">
-              © {currentYear} faqtpn. All rights reserved.
+              © {currentYear} Faqtpn. All rights reserved.
             </p>
             <p className="text-gray-400 text-sm mt-2 md:mt-0">
               Made with ❤️ for property seekers
