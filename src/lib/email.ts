@@ -1,15 +1,26 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM_EMAIL = 'Faqtpn <onboarding@resend.dev>'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
-// Log configuration on startup
-console.log('📧 Email config:', {
-  hasApiKey: !!process.env.RESEND_API_KEY,
-  fromEmail: FROM_EMAIL,
-  appUrl: APP_URL,
-})
+// Lazy initialization of Resend to avoid build-time errors
+let resend: Resend | null = null
+function getResend(): Resend {
+  if (!resend) {
+    const apiKey = process.env.RESEND_API_KEY
+    if (!apiKey) {
+      console.warn('⚠️ RESEND_API_KEY is not set. Email functionality will be disabled.')
+      throw new Error('Email service is not configured. Please set RESEND_API_KEY environment variable.')
+    }
+    resend = new Resend(apiKey)
+    console.log('📧 Email config:', {
+      hasApiKey: !!apiKey,
+      fromEmail: FROM_EMAIL,
+      appUrl: APP_URL,
+    })
+  }
+  return resend
+}
 
 // ============================================
 // 1️⃣ ACCOUNT & SECURITY (MANDATORY)
@@ -26,7 +37,7 @@ export async function sendVerificationEmail(params: {
   try {
     const verificationUrl = `${APP_URL}/auth/verify?token=${params.verificationToken}`
     
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResend().emails.send({
       from: FROM_EMAIL,
       to: [params.to],
       subject: 'Verify your email address - Faqtpn',
@@ -134,7 +145,7 @@ export async function sendPasswordResetEmail(params: {
   try {
     const resetUrl = `${APP_URL}/auth/reset-password?token=${params.resetToken}`
     
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResend().emails.send({
       from: FROM_EMAIL,
       to: [params.to],
       subject: 'Password Reset Request - Faqtpn',
@@ -254,7 +265,7 @@ export async function sendAlertEmail(params: {
   alertName: string
 }) {
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResend().emails.send({
       from: FROM_EMAIL,
       to: [params.to],
       subject: `New Property Alert: ${params.propertyTitle} - Faqtpn`,
@@ -379,7 +390,7 @@ export async function sendEnquiryReplyEmail(params: {
   ownerName: string
 }) {
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResend().emails.send({
       from: FROM_EMAIL,
       to: [params.to],
       subject: `Reply to your enquiry: ${params.propertyTitle} - Faqtpn`,
@@ -495,7 +506,7 @@ export async function sendListingConfirmationEmail(params: {
   try {
     const propertyUrl = `${APP_URL}/properties/${params.propertyId}`
     
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResend().emails.send({
       from: FROM_EMAIL,
       to: [params.to],
       subject: `Listing Submitted: ${params.propertyTitle} - Faqtpn`,
@@ -617,7 +628,7 @@ export async function sendListingApprovalEmail(params: {
   propertyUrl: string
 }) {
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResend().emails.send({
       from: FROM_EMAIL,
       to: [params.to],
       subject: `Your listing is now live: ${params.propertyTitle} - Faqtpn`,
@@ -743,7 +754,7 @@ export async function sendListingRejectionEmail(params: {
   propertyUrl: string
 }) {
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResend().emails.send({
       from: FROM_EMAIL,
       to: [params.to],
       subject: `Action Required: ${params.propertyTitle} - Faqtpn`,
