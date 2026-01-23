@@ -5,12 +5,19 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
 // Lazy initialization of Resend to avoid build-time errors
 let resend: Resend | null = null
-function getResend(): Resend {
+let emailDisabled = false
+
+function getResend(): Resend | null {
+  if (emailDisabled) {
+    return null
+  }
+  
   if (!resend) {
     const apiKey = process.env.RESEND_API_KEY
     if (!apiKey) {
       console.warn('⚠️ RESEND_API_KEY is not set. Email functionality will be disabled.')
-      throw new Error('Email service is not configured. Please set RESEND_API_KEY environment variable.')
+      emailDisabled = true
+      return null
     }
     resend = new Resend(apiKey)
     console.log('📧 Email config:', {
@@ -34,10 +41,16 @@ export async function sendVerificationEmail(params: {
   userName: string
   verificationToken: string
 }) {
+  const client = getResend()
+  if (!client) {
+    console.warn('📧 Email disabled - skipping verification email')
+    return { data: null, error: null }
+  }
+  
   try {
     const verificationUrl = `${APP_URL}/auth/verify?token=${params.verificationToken}`
     
-    const { data, error } = await getResend().emails.send({
+    const { data, error } = await client.emails.send({
       from: FROM_EMAIL,
       to: [params.to],
       subject: 'Verify your email address - Faqtpn',
@@ -142,10 +155,16 @@ export async function sendPasswordResetEmail(params: {
   userName: string
   resetToken: string
 }) {
+  const client = getResend()
+  if (!client) {
+    console.warn('📧 Email disabled - skipping password reset email')
+    return { data: null, error: null }
+  }
+  
   try {
     const resetUrl = `${APP_URL}/auth/reset-password?token=${params.resetToken}`
     
-    const { data, error } = await getResend().emails.send({
+    const { data, error } = await client.emails.send({
       from: FROM_EMAIL,
       to: [params.to],
       subject: 'Password Reset Request - Faqtpn',
@@ -264,8 +283,14 @@ export async function sendAlertEmail(params: {
   propertyUrl: string
   alertName: string
 }) {
+  const client = getResend()
+  if (!client) {
+    console.warn('📧 Email disabled - skipping alert email')
+    return { data: null, error: null }
+  }
+  
   try {
-    const { data, error } = await getResend().emails.send({
+    const { data, error } = await client.emails.send({
       from: FROM_EMAIL,
       to: [params.to],
       subject: `New Property Alert: ${params.propertyTitle} - Faqtpn`,
@@ -389,8 +414,14 @@ export async function sendEnquiryReplyEmail(params: {
   replyMessage: string
   ownerName: string
 }) {
+  const client = getResend()
+  if (!client) {
+    console.warn('📧 Email disabled - skipping enquiry reply email')
+    return { data: null, error: null }
+  }
+  
   try {
-    const { data, error } = await getResend().emails.send({
+    const { data, error } = await client.emails.send({
       from: FROM_EMAIL,
       to: [params.to],
       subject: `Reply to your enquiry: ${params.propertyTitle} - Faqtpn`,
@@ -503,10 +534,16 @@ export async function sendListingConfirmationEmail(params: {
   propertyTitle: string
   propertyId: string
 }) {
+  const client = getResend()
+  if (!client) {
+    console.warn('📧 Email disabled - skipping listing confirmation email')
+    return { data: null, error: null }
+  }
+  
   try {
     const propertyUrl = `${APP_URL}/properties/${params.propertyId}`
     
-    const { data, error } = await getResend().emails.send({
+    const { data, error } = await client.emails.send({
       from: FROM_EMAIL,
       to: [params.to],
       subject: `Listing Submitted: ${params.propertyTitle} - Faqtpn`,
@@ -627,8 +664,14 @@ export async function sendListingApprovalEmail(params: {
   propertyTitle: string
   propertyUrl: string
 }) {
+  const client = getResend()
+  if (!client) {
+    console.warn('📧 Email disabled - skipping listing approval email')
+    return { data: null, error: null }
+  }
+  
   try {
-    const { data, error } = await getResend().emails.send({
+    const { data, error } = await client.emails.send({
       from: FROM_EMAIL,
       to: [params.to],
       subject: `Your listing is now live: ${params.propertyTitle} - Faqtpn`,
@@ -753,8 +796,14 @@ export async function sendListingRejectionEmail(params: {
   reason?: string
   propertyUrl: string
 }) {
+  const client = getResend()
+  if (!client) {
+    console.warn('📧 Email disabled - skipping listing rejection email')
+    return { data: null, error: null }
+  }
+  
   try {
-    const { data, error } = await getResend().emails.send({
+    const { data, error } = await client.emails.send({
       from: FROM_EMAIL,
       to: [params.to],
       subject: `Action Required: ${params.propertyTitle} - Faqtpn`,
