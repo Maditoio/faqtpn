@@ -75,7 +75,7 @@ export const draftPropertySchema = z.object({
   electricityPrepaid: z.boolean().optional(),
   depositMonths: z.number().int().min(1).max(12).optional(),
   bankStatementsMonths: z.number().int().min(1).max(12).optional(),
-  status: z.literal('DRAFT').optional(),
+  status: z.enum(['DRAFT', 'PENDING', 'APPROVED', 'SUSPENDED', 'RENTED', 'DELETED']).optional(),
 })
 
 export const propertyUpdateSchema = propertySchema.partial()

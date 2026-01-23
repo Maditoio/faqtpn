@@ -156,6 +156,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { images, ...propertyData } = body
 
+    console.log('📥 Received property data:', { 
+      status: propertyData.status, 
+      title: propertyData.title,
+      hasImages: !!images 
+    })
+
     // Determine if this is a draft or full submission
     const isDraft = propertyData.status === 'DRAFT'
 
@@ -182,6 +188,7 @@ export async function POST(req: NextRequest) {
       : propertySchema.safeParse(propertyData)
     
     if (!validationResult.success) {
+      console.error('❌ Validation failed:', validationResult.error.issues)
       return NextResponse.json(
         { error: 'Invalid input', details: validationResult.error.issues },
         { status: 400 }
@@ -189,6 +196,8 @@ export async function POST(req: NextRequest) {
     }
 
     const data = validationResult.data
+
+    console.log('✅ Validation passed, creating property...')
 
     // Prepare image data
     const imageCreate = images && images.length > 0
@@ -223,6 +232,8 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    console.log('✅ Property created successfully:', property.id)
+
     // Invalidate caches after creating property
     invalidateCache.property(property.id)
     invalidateCache.owner(user.id)
@@ -242,13 +253,34 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     )
   } catch (error: any) {
-    console.error('Error creating property:', error)
+    console.error('❌ Error creating property:', error)
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      stack: error.stack?.split('\n').slice(0, 3)
+    })
     
     // Handle specific error types
     if (error.message?.includes('Request Entity Too Large')) {
       return NextResponse.json(
         { error: 'Images are too large. Please compress them and try again. Maximum total size is 4.5MB.' },
         { status: 413 }
+      )
+    }
+
+    // Handle Prisma errors
+    if (error.code === 'P2002') {
+      return NextResponse.json(
+        { error: 'A property with this information already exists.' },
+        { status: 409 }
+      )
+    }
+
+    if (error.code === 'P2003') {
+      return NextResponse.json(
+        { error: 'Invalid user reference.' },
+        { status: 400 }
       )
     }
     

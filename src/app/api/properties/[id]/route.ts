@@ -126,10 +126,18 @@ export async function PATCH(
     const body = await req.json()
     const { images, ...propertyData } = body
 
+    console.log('📥 Received property update:', { 
+      id,
+      status: propertyData.status, 
+      title: propertyData.title,
+      hasImages: !!images 
+    })
+
     // Validate input
     const validationResult = propertyUpdateSchema.safeParse(propertyData)
     
     if (!validationResult.success) {
+      console.error('❌ Validation failed:', validationResult.error.issues)
       return NextResponse.json(
         { error: 'Invalid input', details: validationResult.error.issues },
         { status: 400 }
@@ -246,14 +254,22 @@ export async function PATCH(
     invalidateCache.property(id)
     invalidateCache.owner(property.ownerId)
 
+    console.log('✅ Property updated successfully:', id)
+
     return NextResponse.json({
       message: 'Property updated successfully',
       property: updatedProperty,
     })
-  } catch (error) {
-    console.error('Error updating property:', error)
+  } catch (error: any) {
+    console.error('❌ Error updating property:', error)
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      stack: error.stack?.split('\n').slice(0, 3)
+    })
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error.message },
       { status: 500 }
     )
   }
