@@ -35,8 +35,14 @@ export const propertySchema = z.object({
   squareFeet: z.number().int().positive().optional(),
   parkingSpaces: z.number().int().min(0).max(20).optional(),
   amenities: z.array(z.string()).optional(),
-  latitude: z.number().min(-90).max(90).optional(),
-  longitude: z.number().min(-180).max(180).optional(),
+  latitude: z.preprocess((val) => {
+    if (typeof val === 'string') return parseFloat(val)
+    return val
+  }, z.number().min(-90).max(90).optional()),
+  longitude: z.preprocess((val) => {
+    if (typeof val === 'string') return parseFloat(val)
+    return val
+  }, z.number().min(-180).max(180).optional()),
   availableFrom: z.union([z.string(), z.date()]).transform(val => {
     if (typeof val === 'string') return new Date(val)
     return val
@@ -78,8 +84,14 @@ export const draftPropertySchema = z.object({
   squareFeet: z.number().int().positive().optional(),
   parkingSpaces: z.number().int().min(0).max(20).optional(),
   amenities: z.array(z.string()).optional(),
-  latitude: z.number().min(-90).max(90).optional(),
-  longitude: z.number().min(-180).max(180).optional(),
+  latitude: z.preprocess((val) => {
+    if (typeof val === 'string') return parseFloat(val)
+    return val
+  }, z.number().min(-90).max(90).optional()),
+  longitude: z.preprocess((val) => {
+    if (typeof val === 'string') return parseFloat(val)
+    return val
+  }, z.number().min(-180).max(180).optional()),
   availableFrom: z.union([z.string(), z.date()]).transform(val => {
     if (typeof val === 'string') return new Date(val)
     return val
