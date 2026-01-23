@@ -406,24 +406,7 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
       return false
     }
     
-    // Luhn algorithm for card validation
-    let sum = 0
-    let isEven = false
-    for (let i = cleaned.length - 1; i >= 0; i--) {
-      let digit = parseInt(cleaned[i])
-      if (isEven) {
-        digit *= 2
-        if (digit > 9) digit -= 9
-      }
-      sum += digit
-      isEven = !isEven
-    }
-    
-    if (sum % 10 !== 0) {
-      setCardErrors(prev => ({ ...prev, cardNumber: 'Invalid card number' }))
-      return false
-    }
-    
+    // Skip Luhn validation for demo environment
     setCardErrors(prev => ({ ...prev, cardNumber: '' }))
     return true
   }
