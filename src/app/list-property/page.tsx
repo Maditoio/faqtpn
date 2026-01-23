@@ -94,7 +94,7 @@ export default function ListPropertyPage() {
             </div>
             <h3 className="text-2xl font-bold text-gray-900 mb-3">Affordable Pricing</h3>
             <p className="text-gray-700 text-lg leading-relaxed">
-              List your property for just R149 for 3 months. No hidden fees, no commission. One simple price for maximum exposure.
+              List your property starting from just R49 for 3 months. Choose from flexible plans with 3, 10, or 20 photos. No hidden fees, no commission.
             </p>
           </div>
 
@@ -140,7 +140,7 @@ export default function ListPropertyPage() {
               </div>
               <h3 className="text-2xl font-bold mb-3">Review & Pay</h3>
               <p className="text-blue-100 text-lg">
-                Review your listing and complete secure payment. Simple one-time fee of R149.
+                Choose your listing plan and complete secure payment. Simple one-time fee starting from R49.
               </p>
             </div>
 
@@ -157,97 +157,205 @@ export default function ListPropertyPage() {
         </div>
 
         {/* Pricing Section */}
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <h2 className="text-4xl font-bold text-center text-gray-900 mb-4">
             Simple, Transparent Pricing
           </h2>
           <p className="text-xl text-center text-gray-600 mb-12">
-            One price, unlimited exposure. No surprises.
+            Choose the plan that fits your needs. No surprises.
           </p>
 
-          <div className="bg-white rounded-2xl shadow-2xl border-4 border-blue-500 overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white text-center py-6">
-              <div className="inline-block bg-yellow-400 text-blue-900 px-4 py-2 rounded-full text-sm font-bold mb-2">
-                🎉 BEST VALUE
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Basic Plan */}
+            <div className="bg-white rounded-2xl shadow-lg border-2 border-gray-200 overflow-hidden">
+              <div className="bg-gray-100 text-center py-6">
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Basic</h3>
+                <p className="text-gray-600">Perfect for simple listings</p>
               </div>
-              <h3 className="text-3xl font-bold mb-2">Standard Listing</h3>
-              <p className="text-blue-100">Perfect for landlords of all sizes</p>
+
+              <div className="p-8">
+                <div className="text-center mb-6">
+                  <div className="flex items-baseline justify-center mb-2">
+                    <span className="text-5xl font-bold text-gray-900">R49</span>
+                    <span className="text-xl text-gray-600 ml-2">/ 3 months</span>
+                  </div>
+                  <p className="text-gray-600">Only R16.33 per month!</p>
+                </div>
+
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-start gap-2">
+                    <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <CheckIcon className="w-3 h-3 text-green-600" />
+                    </div>
+                    <span className="text-gray-700"><strong>3 photos</strong></span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <CheckIcon className="w-3 h-3 text-green-600" />
+                    </div>
+                    <span className="text-gray-700">3 months visibility</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <CheckIcon className="w-3 h-3 text-green-600" />
+                    </div>
+                    <span className="text-gray-700">Direct tenant contact</span>
+                  </li>
+                </ul>
+              </div>
             </div>
 
-            <div className="p-12">
-              <div className="text-center mb-8">
-                <div className="flex items-baseline justify-center mb-2">
-                  <span className="text-6xl font-bold text-gray-900">R149</span>
-                  <span className="text-2xl text-gray-600 ml-2">/ 3 months</span>
+            {/* Standard Plan - Most Popular */}
+            <div className="bg-white rounded-2xl shadow-2xl border-4 border-blue-500 overflow-hidden transform scale-105">
+              <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white text-center py-6">
+                <div className="inline-block bg-yellow-400 text-blue-900 px-3 py-1 rounded-full text-xs font-bold mb-2">
+                  🎉 MOST POPULAR
                 </div>
-                <p className="text-gray-600 text-lg">That's only R49.67 per month!</p>
+                <h3 className="text-2xl font-bold mb-2">Standard</h3>
+                <p className="text-blue-100">Best value for most properties</p>
               </div>
 
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                    <CheckIcon className="w-4 h-4 text-green-600" />
+              <div className="p-8">
+                <div className="text-center mb-6">
+                  <div className="flex items-baseline justify-center mb-2">
+                    <span className="text-5xl font-bold text-gray-900">R64</span>
+                    <span className="text-xl text-gray-600 ml-2">/ 3 months</span>
                   </div>
-                  <span className="text-gray-800 text-lg">
-                    <strong>3 months of premium visibility</strong> - Your property stays live for 90 days
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                    <CheckIcon className="w-4 h-4 text-green-600" />
-                  </div>
-                  <span className="text-gray-800 text-lg">
-                    <strong>Unlimited photo uploads</strong> - Showcase your property with as many images as you need
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                    <CheckIcon className="w-4 h-4 text-green-600" />
-                  </div>
-                  <span className="text-gray-800 text-lg">
-                    <strong>Featured on search results</strong> - Maximum visibility to millions of renters
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                    <CheckIcon className="w-4 h-4 text-green-600" />
-                  </div>
-                  <span className="text-gray-800 text-lg">
-                    <strong>Direct tenant contact</strong> - Receive inquiries via email, phone, and WhatsApp
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                    <CheckIcon className="w-4 h-4 text-green-600" />
-                  </div>
-                  <span className="text-gray-800 text-lg">
-                    <strong>Edit anytime</strong> - Update your listing whenever you need to
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                    <CheckIcon className="w-4 h-4 text-green-600" />
-                  </div>
-                  <span className="text-gray-800 text-lg">
-                    <strong>24/7 dashboard access</strong> - Monitor views and manage your listing
-                  </span>
-                </li>
-              </ul>
+                  <p className="text-gray-600">Only R21.33 per month!</p>
+                </div>
 
-              <Button
-                variant="primary"
-                size="lg"
-                onClick={handleGetStarted}
-                className="w-full !py-4 !text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 shadow-lg"
-              >
-                Get Started Now →
-              </Button>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-start gap-2">
+                    <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <CheckIcon className="w-3 h-3 text-green-600" />
+                    </div>
+                    <span className="text-gray-700"><strong>10 photos</strong></span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <CheckIcon className="w-3 h-3 text-green-600" />
+                    </div>
+                    <span className="text-gray-700">3 months visibility</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <CheckIcon className="w-3 h-3 text-green-600" />
+                    </div>
+                    <span className="text-gray-700">Direct tenant contact</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <CheckIcon className="w-3 h-3 text-green-600" />
+                    </div>
+                    <span className="text-gray-700">Featured placement</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
 
-              <p className="text-center text-gray-600 mt-4 text-sm">
-                🔒 Secure payment • ✅ Instant activation • 💯 Money-back guarantee
-              </p>
+            {/* Premium Plan */}
+            <div className="bg-white rounded-2xl shadow-lg border-2 border-purple-300 overflow-hidden">
+              <div className="bg-gradient-to-r from-purple-500 to-purple-700 text-white text-center py-6">
+                <h3 className="text-2xl font-bold mb-2">Premium</h3>
+                <p className="text-purple-100">Maximum exposure</p>
+              </div>
+
+              <div className="p-8">
+                <div className="text-center mb-6">
+                  <div className="flex items-baseline justify-center mb-2">
+                    <span className="text-5xl font-bold text-gray-900">R74</span>
+                    <span className="text-xl text-gray-600 ml-2">/ 3 months</span>
+                  </div>
+                  <p className="text-gray-600">Only R24.67 per month!</p>
+                </div>
+
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-start gap-2">
+                    <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <CheckIcon className="w-3 h-3 text-green-600" />
+                    </div>
+                    <span className="text-gray-700"><strong>20 photos</strong></span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <CheckIcon className="w-3 h-3 text-green-600" />
+                    </div>
+                    <span className="text-gray-700">3 months visibility</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <CheckIcon className="w-3 h-3 text-green-600" />
+                    </div>
+                    <span className="text-gray-700">Direct tenant contact</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <CheckIcon className="w-3 h-3 text-green-600" />
+                    </div>
+                    <span className="text-gray-700">Featured placement</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <CheckIcon className="w-3 h-3 text-green-600" />
+                    </div>
+                    <span className="text-gray-700">Priority support</span>
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
+
+          {/* Common Features */}
+          <div className="mt-12 bg-gray-50 rounded-xl p-8">
+            <h3 className="text-2xl font-bold text-center text-gray-900 mb-6">All Plans Include:</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
+              <div className="flex items-start gap-3">
+                <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-1" />
+                <span className="text-gray-700">3 months of premium visibility</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-1" />
+                <span className="text-gray-700">Direct tenant contact via email, phone & WhatsApp</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-1" />
+                <span className="text-gray-700">Featured on search results</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-1" />
+                <span className="text-gray-700">Edit anytime during listing period</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-1" />
+                <span className="text-gray-700">No commissions or hidden fees</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-1" />
+                <span className="text-gray-700">Professional listing presentation</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* CTA Section */}
+        <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 rounded-2xl p-12 text-white text-center">
+          <h2 className="text-4xl font-bold mb-4">Ready to Find Your Perfect Tenant?</h2>
+          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+            Join thousands of landlords who have successfully rented their properties through Faqtpn.
+          </p>
+
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={handleGetStarted}
+            className="!py-4 !px-8 !text-xl font-bold bg-white text-blue-700 hover:bg-blue-50 shadow-lg"
+          >
+            Start Listing Now →
+          </Button>
+
+          <p className="text-blue-100 mt-6">
+            🔒 Secure payment • ✅ Instant activation • 💯 Money-back guarantee
+          </p>
         </div>
 
         {/* Social Proof - Hidden for now, can be activated later */}
