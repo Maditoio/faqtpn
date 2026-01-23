@@ -9,6 +9,7 @@ import ImageUpload, { ImageFile } from '@/components/ImageUpload'
 import LocationAutocomplete from '@/components/LocationAutocomplete'
 import PricingSelector, { pricingPlans } from '@/components/property/PricingSelector'
 import { CheckIcon } from '@/components/icons/Icons'
+import { useToast } from '@/components/ui/Toast'
 
 interface PropertyWizardProps {
   draftId?: string
@@ -28,6 +29,7 @@ const steps = [
 
 export default function PropertyWizard({ draftId, initialData }: PropertyWizardProps) {
   const router = useRouter()
+  const { showToast, ToastComponent } = useToast()
   const [currentStep, setCurrentStep] = useState(1)
   const [saving, setSaving] = useState(false)
   const [listingPlan, setListingPlan] = useState('basic')
@@ -218,14 +220,17 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
     try {
       await saveDraft()
       setLastSaved(new Date())
-    } catch (error) {
+    } catch (error: any) {
       console.error('Auto-save failed:', error)
+      showToast(error.message || 'Auto-save failed', 'error')
     } finally {
       setAutoSaving(false)
     }
   }
 
   const saveDraft = async () => {
+    console.log('💾 Saving draft...', { title: formData.title, propertyId })
+    
     const draftData: any = {
       title: formData.title,
       status: 'DRAFT',
@@ -253,6 +258,8 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
     if (formData.depositMonths) draftData.depositMonths = parseInt(formData.depositMonths)
     if (formData.bankStatementsMonths) draftData.bankStatementsMonths = parseInt(formData.bankStatementsMonths)
     if (selectedAmenities.length > 0) draftData.amenities = selectedAmenities
+
+    console.log('📝 Draft data prepared:', draftData)
 
     // Handle images
     let imageData: any = undefined
@@ -295,6 +302,8 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
     
     const method = propertyId ? 'PATCH' : 'POST'
 
+    console.log('🚀 Sending request:', { url, method, hasImages: !!imageData })
+
     const response = await fetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
@@ -304,27 +313,42 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
       }),
     })
 
+    console.log('📡 Response status:', response.status)
+
     if (!response.ok) {
-      throw new Error('Failed to save draft')
+      const errorData = await response.json().catch(() => ({}))
+      console.error('❌ Save failed:', errorData)
+      throw new Error(errorData.error || `Failed to save draft (${response.status})`)
     }
 
     const data = await response.json()
+    console.log('✅ Draft saved successfully:', data)
     
     if (!propertyId && data.property?.id) {
       setPropertyId(data.property.id)
+      console.log('🆔 Property ID set:', data.property.id)
     }
 
     return data
   }
 
   const handleSaveAndExit = async () => {
+    if (!formData.title || formData.title.trim() === '') {
+      showToast('Please enter a property title before saving', 'warning')
+      return
+    }
+
     setSaving(true)
     try {
       await saveDraft()
-      router.push('/owner/dashboard')
-    } catch (error) {
+      showToast('Draft saved successfully!', 'success')
+      // Wait a moment so user sees the success message
+      setTimeout(() => {
+        router.push('/owner/properties/drafts')
+      }, 1000)
+    } catch (error: any) {
       console.error('Failed to save:', error)
-    } finally {
+      showToast(error.message || 'Failed to save draft. Please try again.', 'error')
       setSaving(false)
     }
   }
@@ -844,8 +868,9 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
             variant="secondary"
             onClick={handleSaveAndExit}
             disabled={saving || !formData.title}
+            title={!formData.title ? 'Enter a title first' : 'Save draft and exit'}
           >
-            Save & Exit
+            {saving ? 'Saving...' : 'Save Draft & Exit'}
           </Button>
 
           <div className="flex gap-3">
@@ -984,6 +1009,9 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
           </div>
         </div>
       )}
+
+      {/* Toast Notifications */}
+      <ToastComponent />
     </div>
   )
 }
