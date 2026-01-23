@@ -482,9 +482,8 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
   const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatCardNumber(e.target.value)
     setCardNumber(formatted)
-    if (formatted.replace(/\s/g, '').length === 16) {
-      validateCardNumber(formatted)
-    } else if (cardErrors.cardNumber) {
+    // Clear errors as user types
+    if (cardErrors.cardNumber) {
       setCardErrors(prev => ({ ...prev, cardNumber: '' }))
     }
   }
@@ -1072,24 +1071,22 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
           <div className="bg-white rounded-2xl max-w-lg w-full p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-3xl font-bold text-gray-900 mb-6">Complete Your Payment</h3>
             
-            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 mb-6">
+            <div className="bg-gray-50 rounded-lg p-6 mb-6">
               <div className="flex justify-between items-center mb-4">
-                <span className="text-gray-800 font-semibold text-lg">
-                  {pricingPlans.find(p => p.id === listingPlan)?.name} Plan (3 months)
+                <span className="text-gray-900 font-semibold text-lg">
+                  {pricingPlans.find(p => p.id === listingPlan)?.name} Plan
                 </span>
-                <span className="text-2xl font-bold text-blue-600">
+                <span className="text-2xl font-bold text-gray-900">
                   R{pricingPlans.find(p => p.id === listingPlan)?.price}
                 </span>
               </div>
               <div className="text-sm text-gray-600 mb-4">
-                • Up to {pricingPlans.find(p => p.id === listingPlan)?.maxImages} property images<br/>
-                • 3 months active listing<br/>
-                • Full property details
+                Up to {pricingPlans.find(p => p.id === listingPlan)?.maxImages} images • 3 months listing
               </div>
-              <div className="border-t border-blue-200 pt-4">
+              <div className="border-t border-gray-300 pt-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-xl font-bold text-gray-900">Total</span>
-                  <span className="text-3xl font-bold text-gray-900">
+                  <span className="text-lg font-semibold text-gray-900">Total</span>
+                  <span className="text-2xl font-bold text-gray-900">
                     R{pricingPlans.find(p => p.id === listingPlan)?.price}
                   </span>
                 </div>
@@ -1097,16 +1094,14 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
             </div>
 
             {/* Wallet Balance Display */}
-            <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4 mb-6">
+            <div className="bg-gray-50 rounded-lg p-4 mb-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Your Wallet Balance</p>
-                  <p className="text-2xl font-bold text-green-600">R{walletBalance.toFixed(2)}</p>
+                  <p className="text-sm text-gray-600">Wallet Balance</p>
+                  <p className="text-xl font-semibold text-gray-900">R{walletBalance.toFixed(2)}</p>
                 </div>
                 {walletBalance >= (pricingPlans.find(p => p.id === listingPlan)?.price || 0) && (
-                  <div className="bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                    ✓ Sufficient
-                  </div>
+                  <span className="text-sm text-gray-600">Available</span>
                 )}
               </div>
             </div>
@@ -1120,9 +1115,9 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
                 <button
                   onClick={() => setPaymentMethod('wallet')}
                   disabled={walletBalance < (pricingPlans.find(p => p.id === listingPlan)?.price || 0)}
-                  className={`p-4 border-2 rounded-lg text-left transition-all ${
+                  className={`p-4 border rounded-lg text-left transition-all ${
                     paymentMethod === 'wallet'
-                      ? 'border-green-500 bg-green-50'
+                      ? 'border-gray-900 bg-gray-50'
                       : 'border-gray-300 hover:border-gray-400'
                   } ${
                     walletBalance < (pricingPlans.find(p => p.id === listingPlan)?.price || 0)
@@ -1130,26 +1125,26 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
                       : 'cursor-pointer'
                   }`}
                 >
-                  <div className="font-bold text-gray-900">💰 Wallet</div>
-                  <div className="text-xs text-gray-600 mt-1">Pay with wallet credits</div>
+                  <div className="font-semibold text-gray-900">Wallet</div>
+                  <div className="text-xs text-gray-600 mt-1">Use wallet credits</div>
                 </button>
                 <button
                   onClick={() => setPaymentMethod('card')}
-                  className={`p-4 border-2 rounded-lg text-left transition-all cursor-pointer ${
+                  className={`p-4 border rounded-lg text-left transition-all cursor-pointer ${
                     paymentMethod === 'card'
-                      ? 'border-blue-500 bg-blue-50'
+                      ? 'border-gray-900 bg-gray-50'
                       : 'border-gray-300 hover:border-gray-400'
                   }`}
                 >
-                  <div className="font-bold text-gray-900">💳 Card</div>
-                  <div className="text-xs text-gray-600 mt-1">Pay with credit/debit card</div>
+                  <div className="font-semibold text-gray-900">Card</div>
+                  <div className="text-xs text-gray-600 mt-1">Credit or debit card</div>
                 </button>
               </div>
             </div>
 
-            <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4 mb-6">
-              <p className="text-yellow-900 font-medium">
-                🔒 <strong>Payment Simulation:</strong> This is a demo environment. No actual payment will be processed.
+            <div className="bg-gray-100 rounded-lg p-4 mb-6">
+              <p className="text-gray-700 text-sm">
+                <strong>Demo Mode:</strong> This is a simulation. No actual payment will be processed.
               </p>
             </div>
 
@@ -1164,8 +1159,15 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
                   placeholder="1234 5678 9012 3456"
                   value={cardNumber}
                   onChange={handleCardNumberChange}
-                  onBlur={() => cardNumber && validateCardNumber(cardNumber)}
-                  className={`w-full px-4 py-3 border ${cardErrors.cardNumber ? 'border-red-500' : 'border-gray-300'} focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500`}
+                  onBlur={() => {
+                    const cleaned = cardNumber.replace(/\s/g, '')
+                    if (cleaned.length > 0 && cleaned.length !== 16) {
+                      setCardErrors(prev => ({ ...prev, cardNumber: 'Card number must be 16 digits' }))
+                    } else if (cleaned.length === 16) {
+                      validateCardNumber(cardNumber)
+                    }
+                  }}
+                  className={`w-full px-4 py-3 border ${cardErrors.cardNumber ? 'border-red-500' : 'border-gray-300'} focus:ring-2 focus:ring-gray-900 focus:border-transparent text-gray-900 placeholder-gray-500`}
                   disabled={isProcessing}
                 />
                 {cardErrors.cardNumber && (
@@ -1228,17 +1230,14 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
                 size="lg"
                 onClick={handlePayment}
                 disabled={isProcessing}
-                className={`flex-1 ${paymentMethod === 'wallet' ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}`}
+                className="flex-1 bg-gray-900 hover:bg-gray-800"
               >
                 {isProcessing ? (
-                  <>
-                    <span className="animate-spin mr-2">⏳</span>
-                    Processing...
-                  </>
+                  'Processing...'
                 ) : paymentMethod === 'wallet' ? (
-                  '💰 Pay with Wallet'
+                  'Pay with Wallet'
                 ) : (
-                  '💳 Complete Payment'
+                  'Complete Payment'
                 )}
               </Button>
             </div>
