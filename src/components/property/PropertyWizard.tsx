@@ -44,6 +44,9 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
   const [expiryDate, setExpiryDate] = useState('')
   const [cvv, setCvv] = useState('')
   const [cardErrors, setCardErrors] = useState({ cardNumber: '', expiryDate: '', cvv: '' })
+  const [walletBalance, setWalletBalance] = useState<number>(0)
+  const [useWallet, setUseWallet] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'wallet'>('card')
   
   const [formData, setFormData] = useState({
     title: '',
@@ -138,6 +141,22 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
       setCurrentStep(nextStep)
     }
   }, [initialData])
+
+  // Fetch wallet balance
+  useEffect(() => {
+    const fetchWalletBalance = async () => {
+      try {
+        const response = await fetch('/api/owner/wallet')
+        if (response.ok) {
+          const data = await response.json()
+          setWalletBalance(data.wallet?.balance || 0)
+        }
+      } catch (error) {
+        console.error('Error fetching wallet balance:', error)
+      }
+    }
+    fetchWalletBalance()
+  }, [])
 
   // Calculate the next incomplete step based on data
   const calculateNextStep = (data: any) => {
@@ -491,7 +510,23 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
   }
 
   const handlePayment = async () => {
-    // Validate all fields
+    // If paying with wallet, skip card validation
+    if (paymentMethod === 'wallet') {
+      const listingPrice = pricingPlans.find(p => p.id === listingPlan)?.price || 0
+      if (walletBalance < listingPrice) {
+        showToast('Insufficient wallet balance', 'error')
+        return
+      }
+      
+      setIsProcessing(true)
+      setShowPaymentModal(false)
+      
+      // Submit property with wallet payment
+      await submitProperty(true)
+      return
+    }
+    
+    // Validate card fields for card payment
     const isCardValid = validateCardNumber(cardNumber)
     const isExpiryValid = validateExpiryDate(expiryDate)
     const isCVVValid = validateCVV(cvv)
@@ -510,10 +545,10 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
     setShowPaymentModal(false)
     
     // Now submit the property after payment
-    await submitProperty()
+    await submitProperty(false)
   }
 
-  const submitProperty = async () => {
+  const submitProperty = async (useWalletPayment: boolean = false) => {
     setSaving(true)
     try {
       const selectedPlanData = pricingPlans.find(p => p.id === listingPlan)
@@ -605,6 +640,7 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
         body: JSON.stringify({
           ...submitData,
           ...(imageData && { images: imageData }),
+          paymentMethod: useWalletPayment ? 'wallet' : 'card',
         }),
       })
 
@@ -1033,7 +1069,7 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
       {/* Payment Modal */}
       {showPaymentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-8 shadow-2xl">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-3xl font-bold text-gray-900 mb-6">Complete Your Payment</h3>
             
             <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 mb-6">
@@ -1060,13 +1096,65 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
               </div>
             </div>
 
+            {/* Wallet Balance Display */}
+            <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4 mb-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Your Wallet Balance</p>
+                  <p className="text-2xl font-bold text-green-600">R{walletBalance.toFixed(2)}</p>
+                </div>
+                {walletBalance >= (pricingPlans.find(p => p.id === listingPlan)?.price || 0) && (
+                  <div className="bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+                    ✓ Sufficient
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Payment Method Selection */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-900 mb-3">
+                Payment Method
+              </label>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => setPaymentMethod('wallet')}
+                  disabled={walletBalance < (pricingPlans.find(p => p.id === listingPlan)?.price || 0)}
+                  className={`p-4 border-2 rounded-lg text-left transition-all ${
+                    paymentMethod === 'wallet'
+                      ? 'border-green-500 bg-green-50'
+                      : 'border-gray-300 hover:border-gray-400'
+                  } ${
+                    walletBalance < (pricingPlans.find(p => p.id === listingPlan)?.price || 0)
+                      ? 'opacity-50 cursor-not-allowed'
+                      : 'cursor-pointer'
+                  }`}
+                >
+                  <div className="font-bold text-gray-900">💰 Wallet</div>
+                  <div className="text-xs text-gray-600 mt-1">Pay with wallet credits</div>
+                </button>
+                <button
+                  onClick={() => setPaymentMethod('card')}
+                  className={`p-4 border-2 rounded-lg text-left transition-all cursor-pointer ${
+                    paymentMethod === 'card'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  <div className="font-bold text-gray-900">💳 Card</div>
+                  <div className="text-xs text-gray-600 mt-1">Pay with credit/debit card</div>
+                </button>
+              </div>
+            </div>
+
             <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4 mb-6">
               <p className="text-yellow-900 font-medium">
                 🔒 <strong>Payment Simulation:</strong> This is a demo environment. No actual payment will be processed.
               </p>
             </div>
 
-            <div className="space-y-4 mb-6">
+            {paymentMethod === 'card' && (
+              <div className="space-y-4 mb-6">
               <div>
                 <label className="block text-sm font-medium text-gray-900 mb-2">
                   Card Number
@@ -1123,6 +1211,7 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
                 </div>
               </div>
             </div>
+            )}
 
             <div className="flex gap-3">
               <Button
@@ -1139,15 +1228,17 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
                 size="lg"
                 onClick={handlePayment}
                 disabled={isProcessing}
-                className="flex-1 bg-green-600 hover:bg-green-700"
+                className={`flex-1 ${paymentMethod === 'wallet' ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}`}
               >
                 {isProcessing ? (
                   <>
                     <span className="animate-spin mr-2">⏳</span>
                     Processing...
                   </>
+                ) : paymentMethod === 'wallet' ? (
+                  '💰 Pay with Wallet'
                 ) : (
-                  'Complete Payment'
+                  '💳 Complete Payment'
                 )}
               </Button>
             </div>

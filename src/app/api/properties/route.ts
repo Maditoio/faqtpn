@@ -154,12 +154,13 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { images, ...propertyData } = body
+    const { images, paymentMethod, ...propertyData } = body
 
     console.log('📥 Received property data:', { 
       status: propertyData.status, 
       title: propertyData.title,
-      hasImages: !!images 
+      hasImages: !!images,
+      paymentMethod
     })
 
     // Determine if this is a draft or full submission
@@ -199,6 +200,25 @@ export async function POST(req: NextRequest) {
 
     console.log('✅ Validation passed, creating property...')
 
+    // Handle wallet payment if specified
+    if (paymentMethod === 'wallet' && data.listingPrice && !isDraft) {
+      console.log('💰 Processing wallet payment for listing...', { listingPrice: data.listingPrice })
+      
+      // Get user wallet
+      const wallet = await prisma.wallet.findUnique({
+        where: { userId: user.id }
+      })
+
+      if (!wallet || wallet.balance.toNumber() < data.listingPrice) {
+        return NextResponse.json(
+          { error: 'Insufficient wallet balance' },
+          { status: 400 }
+        )
+      }
+
+      console.log('💳 Wallet balance sufficient:', wallet.balance.toNumber(), 'Required:', data.listingPrice)
+    }
+
     // Prepare image data
     const imageCreate = images && images.length > 0
       ? {
@@ -211,26 +231,98 @@ export async function POST(req: NextRequest) {
       : undefined
 
     // Create property with images
-    const property = await prisma.property.create({
-      data: {
-        ...data,
-        ownerId: user.id,
-        status: data.status || (isDraft ? 'DRAFT' : 'PENDING'), // Drafts stay as DRAFT, others go to PENDING
-        ...(imageCreate && { images: imageCreate }),
-      },
-      include: {
-        images: {
-          orderBy: { order: 'asc' },
+    let property
+    
+    if (paymentMethod === 'wallet' && data.listingPrice && !isDraft) {
+      // Create property and deduct from wallet in a transaction
+      property = await prisma.$transaction(async (tx) => {
+        // Create the property
+        const newProperty = await tx.property.create({
+          data: {
+            ...data,
+            ownerId: user.id,
+            status: 'PENDING',
+            paymentStatus: 'paid',
+            paidAt: new Date(),
+            ...(imageCreate && { images: imageCreate }),
+          },
+          include: {
+            images: {
+              orderBy: { order: 'asc' },
+            },
+            owner: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        })
+
+        // Get wallet
+        const wallet = await tx.wallet.findUnique({
+          where: { userId: user.id }
+        })
+
+        if (!wallet) {
+          throw new Error('Wallet not found')
+        }
+
+        // Deduct from wallet
+        const updatedWallet = await tx.wallet.update({
+          where: { id: wallet.id },
+          data: {
+            balance: { decrement: data.listingPrice },
+            totalSpent: { increment: data.listingPrice }
+          }
+        })
+
+        // Create wallet transaction record
+        await tx.walletTransaction.create({
+          data: {
+            walletId: wallet.id,
+            type: 'DEBIT',
+            amount: data.listingPrice!,
+            description: `Payment for listing: ${newProperty.title}`,
+            referenceType: 'LISTING_PAYMENT',
+            referenceId: newProperty.id,
+            balanceBefore: updatedWallet.balance.toNumber() + data.listingPrice!,
+            balanceAfter: updatedWallet.balance.toNumber()
+          }
+        })
+
+        console.log('✅ Wallet payment processed:', {
+          propertyId: newProperty.id,
+          amount: data.listingPrice,
+          newBalance: updatedWallet.balance.toNumber()
+        })
+
+        return newProperty
+      })
+    } else {
+      // Regular property creation without wallet payment
+      property = await prisma.property.create({
+        data: {
+          ...data,
+          ownerId: user.id,
+          status: data.status || (isDraft ? 'DRAFT' : 'PENDING'),
+          ...(imageCreate && { images: imageCreate }),
         },
-        owner: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+        include: {
+          images: {
+            orderBy: { order: 'asc' },
+          },
+          owner: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
           },
         },
-      },
-    })
+      })
+    }
 
     console.log('✅ Property created successfully:', property.id)
 

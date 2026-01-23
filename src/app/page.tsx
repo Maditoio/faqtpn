@@ -272,8 +272,8 @@ export default function Home() {
             </h2>
             <p className="text-xl text-white/95 mb-8 max-w-3xl mx-auto">
               Listing your property doesn't have to cost an arm and a leg. When you list with us, 
-              we credit <span className="font-bold text-yellow-300">{creditRate}% of your listing fee</span> directly back into your wallet as real cash. 
-              Use it for future listings or withdraw it. <span className="font-bold">Everyone deserves something back.</span>
+              we credit <span className="font-bold text-yellow-300">{creditRate}% of your listing fee</span> directly back into your wallet. 
+              Use it for future listings, upgrade your plan, or add more images to your properties. <span className="font-bold">Everyone deserves something back.</span>
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
               <div className="bg-white/10 backdrop-blur-md border-2 border-white/30 rounded-xl p-6">
