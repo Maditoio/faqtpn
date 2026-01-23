@@ -4,8 +4,6 @@ import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
-export const dynamic = 'force-dynamic'
-
 function AuthErrorContent() {
   const searchParams = useSearchParams()
   const error = searchParams.get('error')

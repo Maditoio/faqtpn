@@ -4,7 +4,6 @@ import { authOptions } from '@/lib/auth-options'
 import { prisma } from '@/lib/prisma'
 import cacheManager, { CacheKeys, CacheTTL } from '@/lib/cache'
 
-// Admin statistics endpoint - provides overview and analytics
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions)

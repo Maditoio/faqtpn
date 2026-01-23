@@ -255,15 +255,17 @@ export default function Home() {
             Join thousands of happy renters and property owners on Faqtpn
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/properties" className="w-full sm:w-auto">
-              <Button variant="primary" size="lg" className="bg-white text-blue-600 hover:bg-gray-100 w-full">
-                Start Searching
-              </Button>
+            <Link 
+              href="/properties" 
+              className="inline-flex items-center justify-center px-6 py-3 text-lg font-bold bg-white text-blue-600 hover:bg-gray-100 rounded-lg transition-colors duration-200 w-full sm:w-auto"
+            >
+              Start Searching
             </Link>
-            <Link href="/register" className="w-full sm:w-auto">
-              <Button variant="secondary" size="lg" className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-blue-600 w-full">
-                Sign Up Free
-              </Button>
+            <Link 
+              href="/register" 
+              className="inline-flex items-center justify-center px-6 py-3 text-lg font-bold bg-transparent border-2 border-white text-white hover:bg-white hover:text-blue-600 rounded-lg transition-colors duration-200 w-full sm:w-auto"
+            >
+              Sign Up Free
             </Link>
           </div>
         </div>

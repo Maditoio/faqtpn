@@ -1,5 +1,0 @@
-# Vercel ignore file
-.next
-node_modules
-.turbo
-coverage
