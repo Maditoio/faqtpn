@@ -234,78 +234,69 @@ export async function POST(req: NextRequest) {
 
     console.log('✅ Property created successfully:', property.id)
 
-    // Process agent commission if property was referred and is paid
-    if (property.referredBy && property.paymentStatus === 'paid' && property.listingPrice) {
+    // Process wallet credits for property owner automatically
+    if (property.paymentStatus === 'paid' && property.listingPrice) {
       try {
-        // Get agent profile and commission rate
-        const agentProfile = await prisma.agentProfile.findUnique({
-          where: { userId: property.referredBy }
+        // Get default credit rate from settings (default 10% back as credits)
+        let creditRate = 10.0 // 10% default
+        const creditSetting = await prisma.systemSettings.findUnique({
+          where: { key: 'owner_credit_rate' }
+        })
+        if (creditSetting) {
+          creditRate = parseFloat(creditSetting.value)
+        }
+
+        const creditAmount = property.listingPrice.toNumber() * (creditRate / 100)
+
+        // Get or create owner wallet
+        let wallet = await prisma.wallet.findUnique({
+          where: { userId: property.ownerId }
         })
 
-        if (agentProfile) {
-          const commissionRate = agentProfile.commissionRate.toNumber() / 100
-          const commissionAmount = property.listingPrice.toNumber() * commissionRate
-
-          // Get or create agent wallet
-          let wallet = await prisma.wallet.findUnique({
-            where: { userId: property.referredBy }
+        if (!wallet) {
+          wallet = await prisma.wallet.create({
+            data: { userId: property.ownerId }
           })
-
-          if (!wallet) {
-            wallet = await prisma.wallet.create({
-              data: { userId: property.referredBy }
-            })
-          }
-
-          // Create transaction in a Prisma transaction
-          await prisma.$transaction(async (tx) => {
-            // Update wallet balance
-            const updatedWallet = await tx.wallet.update({
-              where: { id: wallet!.id },
-              data: {
-                balance: { increment: commissionAmount },
-                totalEarned: { increment: commissionAmount }
-              }
-            })
-
-            // Create transaction record
-            await tx.walletTransaction.create({
-              data: {
-                walletId: wallet!.id,
-                type: 'CREDIT',
-                amount: commissionAmount,
-                description: `Commission from property listing: ${property.title}`,
-                referenceType: 'COMMISSION',
-                referenceId: property.id,
-                balanceBefore: updatedWallet.balance.toNumber() - commissionAmount,
-                balanceAfter: updatedWallet.balance.toNumber()
-              }
-            })
-
-            // Update property commission status
-            await tx.property.update({
-              where: { id: property.id },
-              data: {
-                commissionPaid: true,
-                commissionAmount: commissionAmount
-              }
-            })
-
-            // Update agent stats
-            await tx.agentProfile.update({
-              where: { id: agentProfile.id },
-              data: {
-                totalEarnings: { increment: commissionAmount },
-                totalReferrals: { increment: 1 }
-              }
-            })
-          })
-
-          console.log(`✅ Commission of R${commissionAmount} credited to agent ${property.referredBy}`)
         }
-      } catch (commissionError) {
-        console.error('❌ Error processing commission:', commissionError)
-        // Don't fail the property creation if commission fails
+
+        // Create transaction in a Prisma transaction
+        await prisma.$transaction(async (tx) => {
+          // Update wallet balance
+          const updatedWallet = await tx.wallet.update({
+            where: { id: wallet!.id },
+            data: {
+              balance: { increment: creditAmount },
+              totalEarned: { increment: creditAmount }
+            }
+          })
+
+          // Create transaction record
+          await tx.walletTransaction.create({
+            data: {
+              walletId: wallet!.id,
+              type: 'CREDIT',
+              amount: creditAmount,
+              description: `Credits earned from listing: ${property.title}`,
+              referenceType: 'LISTING',
+              referenceId: property.id,
+              balanceBefore: updatedWallet.balance.toNumber() - creditAmount,
+              balanceAfter: updatedWallet.balance.toNumber()
+            }
+          })
+
+          // Update property with credit amount
+          await tx.property.update({
+            where: { id: property.id },
+            data: {
+              commissionAmount: creditAmount
+            }
+          })
+        })
+
+        console.log(`✅ Credits of R${creditAmount} added to owner ${property.ownerId} wallet`)
+      } catch (creditError) {
+        console.error('❌ Error processing credits:', creditError)
+        // Don't fail the property creation if credits fail
       }
     }
 

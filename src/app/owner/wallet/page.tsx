@@ -3,32 +3,14 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/prisma'
 
-export default async function AgentDashboard() {
+export default async function WalletDashboard() {
   const session = await getServerSession(authOptions)
 
   if (!session?.user?.id) {
     redirect('/auth/signin')
   }
 
-  // Get or create agent profile
-  let agentProfile = await prisma.agentProfile.findUnique({
-    where: { userId: session.user.id }
-  })
-
-  if (!agentProfile) {
-    // Generate unique referral code
-    const referralCode = `AG${Math.random().toString(36).substring(2, 10).toUpperCase()}`
-    
-    agentProfile = await prisma.agentProfile.create({
-      data: {
-        userId: session.user.id,
-        referralCode,
-        commissionRate: 4.0
-      }
-    })
-  }
-
-  // Get or create wallet
+  // Get or create wallet for user
   let wallet = await prisma.wallet.findUnique({
     where: { userId: session.user.id },
     include: {
@@ -50,32 +32,24 @@ export default async function AgentDashboard() {
     })
   }
 
-  // Get referred properties
-  const referredProperties = await prisma.property.findMany({
+  // Get user's properties that earned credits
+  const propertiesWithCredits = await prisma.property.findMany({
     where: {
-      referredBy: session.user.id,
-      paymentStatus: 'paid'
+      ownerId: session.user.id,
+      paymentStatus: 'paid',
+      commissionAmount: { not: null }
     },
-    include: {
-      owner: {
-        select: {
-          name: true,
-          email: true
-        }
-      }
-    },
-    orderBy: { paidAt: 'desc' }
+    orderBy: { paidAt: 'desc' },
+    take: 10
   })
-
-  const referralLink = `${process.env.NEXT_PUBLIC_APP_URL}/list-property?ref=${agentProfile.referralCode}`
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4 max-w-7xl">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Agent Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">My Wallet</h1>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white p-6 shadow">
             <p className="text-sm text-gray-600 mb-1">Wallet Balance</p>
             <p className="text-3xl font-bold text-blue-600">R{wallet.balance.toString()}</p>
@@ -87,46 +61,39 @@ export default async function AgentDashboard() {
           </div>
 
           <div className="bg-white p-6 shadow">
-            <p className="text-sm text-gray-600 mb-1">Total Referrals</p>
-            <p className="text-3xl font-bold text-gray-900">{agentProfile.totalReferrals}</p>
-          </div>
-
-          <div className="bg-white p-6 shadow">
-            <p className="text-sm text-gray-600 mb-1">Commission Rate</p>
-            <p className="text-3xl font-bold text-gray-900">{agentProfile.commissionRate.toString()}%</p>
+            <p className="text-sm text-gray-600 mb-1">Total Spent</p>
+            <p className="text-3xl font-bold text-gray-900">R{wallet.totalSpent.toString()}</p>
           </div>
         </div>
 
-        {/* Referral Link Section */}
-        <div className="bg-white p-6 shadow mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Your Referral Link</h2>
-          <p className="text-gray-600 mb-4">
-            Share this link with property owners. When they list and pay for their property, you earn {agentProfile.commissionRate.toString()}% commission!
-          </p>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={referralLink}
-              readOnly
-              className="flex-1 px-4 py-2 border border-gray-300 bg-gray-50 text-gray-900"
-            />
-            <button
-              onClick={() => navigator.clipboard.writeText(referralLink)}
-              className="px-6 py-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-            >
-              Copy Link
-            </button>
-          </div>
-          <p className="text-sm text-gray-500 mt-2">
-            Your referral code: <span className="font-mono font-semibold">{agentProfile.referralCode}</span>
-          </p>
+        {/* How It Works */}
+        <div className="bg-blue-50 border border-blue-200 p-6 shadow mb-8">
+          <h2 className="text-xl font-semibold text-blue-900 mb-3">How Wallet Credits Work</h2>
+          <ul className="space-y-2 text-sm text-blue-800">
+            <li className="flex items-start gap-2">
+              <span className="text-blue-600 font-bold">•</span>
+              <span>You earn credits automatically when you list properties on our platform</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-blue-600 font-bold">•</span>
+              <span>Credits are added to your wallet when you pay for a listing plan</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-blue-600 font-bold">•</span>
+              <span>Use your wallet balance to pay for future property listings</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-blue-600 font-bold">•</span>
+              <span>Check your transaction history below to see all wallet activity</span>
+            </li>
+          </ul>
         </div>
 
         {/* Recent Transactions */}
         <div className="bg-white p-6 shadow mb-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Transactions</h2>
           {wallet.transactions.length === 0 ? (
-            <p className="text-gray-500">No transactions yet</p>
+            <p className="text-gray-500">No transactions yet. Start listing properties to earn credits!</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -173,29 +140,24 @@ export default async function AgentDashboard() {
           )}
         </div>
 
-        {/* Referred Properties */}
-        <div className="bg-white p-6 shadow">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Referred Properties</h2>
-          {referredProperties.length === 0 ? (
-            <p className="text-gray-500">No referred properties yet. Share your referral link to start earning!</p>
-          ) : (
+        {/* Properties with Credits */}
+        {propertiesWithCredits.length > 0 && (
+          <div className="bg-white p-6 shadow">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Properties That Earned Credits</h2>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
                     <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">Property</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">Owner</th>
                     <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">Date Paid</th>
                     <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900">Listing Price</th>
-                    <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900">Commission</th>
-                    <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900">Status</th>
+                    <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900">Credits Earned</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {referredProperties.map((property) => (
+                  {propertiesWithCredits.map((property) => (
                     <tr key={property.id} className="border-b">
                       <td className="py-3 px-4 text-sm text-gray-900">{property.title}</td>
-                      <td className="py-3 px-4 text-sm text-gray-600">{property.owner.name}</td>
                       <td className="py-3 px-4 text-sm text-gray-600">
                         {property.paidAt ? new Date(property.paidAt).toLocaleDateString() : '-'}
                       </td>
@@ -205,24 +167,13 @@ export default async function AgentDashboard() {
                       <td className="py-3 px-4 text-sm font-semibold text-green-600 text-right">
                         R{property.commissionAmount?.toString() || '0'}
                       </td>
-                      <td className="py-3 px-4 text-center">
-                        <span
-                          className={`inline-block px-2 py-1 text-xs font-semibold ${
-                            property.commissionPaid
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}
-                        >
-                          {property.commissionPaid ? 'Paid' : 'Pending'}
-                        </span>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   )

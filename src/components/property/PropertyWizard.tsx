@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { TextArea } from '@/components/ui/TextArea'
@@ -29,8 +29,6 @@ const steps = [
 
 export default function PropertyWizard({ draftId, initialData }: PropertyWizardProps) {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const referralCode = searchParams.get('ref') // Get referral code from URL
   const { showToast, ToastComponent } = useToast()
   const [currentStep, setCurrentStep] = useState(1)
   const [saving, setSaving] = useState(false)
@@ -42,7 +40,6 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([])
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
-  const [referredByAgentId, setReferredByAgentId] = useState<string | null>(null)
   
   const [formData, setFormData] = useState({
     title: '',
@@ -137,21 +134,6 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
       setCurrentStep(nextStep)
     }
   }, [initialData])
-
-  // Fetch agent ID from referral code
-  useEffect(() => {
-    if (referralCode) {
-      fetch(`/api/agent/verify-referral?code=${referralCode}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.success && data.agentId) {
-            setReferredByAgentId(data.agentId)
-            showToast('You were referred by an agent! They will earn a commission when you list.', 'info')
-          }
-        })
-        .catch(err => console.error('Error verifying referral:', err))
-    }
-  }, [referralCode])
 
   // Calculate the next incomplete step based on data
   const calculateNextStep = (data: any) => {
@@ -429,8 +411,6 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
         paymentStatus: 'paid', // Simulated payment
         paidAt: new Date().toISOString(),
         expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(), // 3 months from now
-        // Add referral tracking
-        referredBy: referredByAgentId || null,
       }
 
       // Add optional location fields

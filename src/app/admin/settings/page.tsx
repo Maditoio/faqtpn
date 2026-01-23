@@ -11,17 +11,17 @@ export default async function AdminSettingsPage() {
     redirect('/auth/signin')
   }
 
-  // Get or create default commission rate setting
-  let commissionSetting = await prisma.systemSettings.findUnique({
-    where: { key: 'agent_commission_rate' }
+  // Get or create default credit rate setting
+  let creditSetting = await prisma.systemSettings.findUnique({
+    where: { key: 'owner_credit_rate' }
   })
 
-  if (!commissionSetting) {
-    commissionSetting = await prisma.systemSettings.create({
+  if (!creditSetting) {
+    creditSetting = await prisma.systemSettings.create({
       data: {
-        key: 'agent_commission_rate',
-        value: '4.0',
-        description: 'Default commission rate (%) for agent referrals'
+        key: 'owner_credit_rate',
+        value: '10.0',
+        description: 'Percentage of listing price credited back to owner wallet (%)'
       }
     })
   }
@@ -32,26 +32,33 @@ export default async function AdminSettingsPage() {
         <h1 className="text-3xl font-bold text-gray-900 mb-8">System Settings</h1>
 
         <div className="bg-white p-6 shadow mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Agent Commission Settings</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Owner Wallet Credit Settings</h2>
           <p className="text-gray-600 mb-6">
-            Configure the default commission rate for agent referrals. This rate will be applied to new agents.
+            Configure the percentage of listing price that property owners receive as wallet credits when they list properties.
           </p>
 
-          <SettingsForm initialRate={commissionSetting.value} />
+          <SettingsForm initialRate={creditSetting.value} />
         </div>
 
         <div className="bg-white p-6 shadow">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Agent Statistics</h2>
-          {/* Agent stats will be loaded client-side */}
-          <AgentStats />
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Wallet Statistics</h2>
+          {/* Wallet stats will be loaded */}
+          <WalletStats />
         </div>
       </div>
     </div>
   )
 }
 
-async function AgentStats() {
-  const agents = await prisma.agentProfile.findMany({
+async function WalletStats() {
+  const totalWallets = await prisma.wallet.count()
+  const totalCredits = await prisma.wallet.aggregate({
+    _sum: {
+      totalEarned: true
+    }
+  })
+
+  const topWallets = await prisma.wallet.findMany({
     include: {
       user: {
         select: {
@@ -61,77 +68,54 @@ async function AgentStats() {
       }
     },
     orderBy: {
-      totalEarnings: 'desc'
+      totalEarned: 'desc'
     },
     take: 10
   })
 
-  const totalAgents = await prisma.agentProfile.count()
-  const totalCommissions = await prisma.agentProfile.aggregate({
-    _sum: {
-      totalEarnings: true
-    }
-  })
-
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="p-4 bg-gray-50">
-          <p className="text-sm text-gray-600">Total Agents</p>
-          <p className="text-2xl font-bold text-gray-900">{totalAgents}</p>
+          <p className="text-sm text-gray-600">Total Wallets</p>
+          <p className="text-2xl font-bold text-gray-900">{totalWallets}</p>
         </div>
         <div className="p-4 bg-gray-50">
-          <p className="text-sm text-gray-600">Total Commissions Paid</p>
+          <p className="text-sm text-gray-600">Total Credits Issued</p>
           <p className="text-2xl font-bold text-green-600">
-            R{totalCommissions._sum.totalEarnings?.toString() || '0'}
-          </p>
-        </div>
-        <div className="p-4 bg-gray-50">
-          <p className="text-sm text-gray-600">Total Referrals</p>
-          <p className="text-2xl font-bold text-gray-900">
-            {agents.reduce((sum, a) => sum + a.totalReferrals, 0)}
+            R{totalCredits._sum.totalEarned?.toString() || '0'}
           </p>
         </div>
       </div>
 
-      <h3 className="text-lg font-semibold text-gray-900 mb-3">Top Performing Agents</h3>
-      {agents.length === 0 ? (
-        <p className="text-gray-500">No agents registered yet</p>
+      <h3 className="text-lg font-semibold text-gray-900 mb-3">Top Wallet Holders</h3>
+      {topWallets.length === 0 ? (
+        <p className="text-gray-500">No wallets yet</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b">
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">Agent</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">Owner</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">Email</th>
-                <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900">Referrals</th>
-                <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900">Earnings</th>
-                <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900">Rate</th>
-                <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900">Status</th>
+                <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900">Balance</th>
+                <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900">Total Earned</th>
+                <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900">Total Spent</th>
               </tr>
             </thead>
             <tbody>
-              {agents.map((agent) => (
-                <tr key={agent.id} className="border-b">
-                  <td className="py-3 px-4 text-sm text-gray-900">{agent.user.name}</td>
-                  <td className="py-3 px-4 text-sm text-gray-600">{agent.user.email}</td>
-                  <td className="py-3 px-4 text-sm text-center text-gray-900">{agent.totalReferrals}</td>
-                  <td className="py-3 px-4 text-sm font-semibold text-green-600 text-right">
-                    R{agent.totalEarnings.toString()}
+              {topWallets.map((wallet) => (
+                <tr key={wallet.id} className="border-b">
+                  <td className="py-3 px-4 text-sm text-gray-900">{wallet.user.name}</td>
+                  <td className="py-3 px-4 text-sm text-gray-600">{wallet.user.email}</td>
+                  <td className="py-3 px-4 text-sm font-semibold text-blue-600 text-right">
+                    R{wallet.balance.toString()}
                   </td>
-                  <td className="py-3 px-4 text-sm text-center text-gray-900">
-                    {agent.commissionRate.toString()}%
+                  <td className="py-3 px-4 text-sm text-green-600 text-right">
+                    R{wallet.totalEarned.toString()}
                   </td>
-                  <td className="py-3 px-4 text-center">
-                    <span
-                      className={`inline-block px-2 py-1 text-xs font-semibold ${
-                        agent.isActive
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {agent.isActive ? 'Active' : 'Inactive'}
-                    </span>
+                  <td className="py-3 px-4 text-sm text-gray-900 text-right">
+                    R{wallet.totalSpent.toString()}
                   </td>
                 </tr>
               ))}

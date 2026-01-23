@@ -25,7 +25,7 @@ export function SettingsForm({ initialRate }: SettingsFormProps) {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          key: 'agent_commission_rate',
+          key: 'owner_credit_rate',
           value: rate
         })
       })
@@ -47,7 +47,7 @@ export function SettingsForm({ initialRate }: SettingsFormProps) {
     <form onSubmit={handleSubmit} className="max-w-md">
       <Input
         type="number"
-        label="Default Commission Rate (%)"
+        label="Owner Credit Rate (%)"
         value={rate}
         onChange={(e) => setRate(e.target.value)}
         step="0.01"
