@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback } from "react";
 import { Star, X, Upload, Image as ImageIcon } from "lucide-react";
+import imageCompression from 'browser-image-compression';
 
 export interface ImageFile {
   id: string;
@@ -22,9 +23,28 @@ export default function ImageUpload({
   maxImages = 15,
 }: ImageUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const [compressing, setCompressing] = useState(false);
+
+  const compressImage = async (file: File): Promise<File> => {
+    const options = {
+      maxSizeMB: 0.8, // 800KB max per image
+      maxWidthOrHeight: 1920, // Max dimension
+      useWebWorker: true,
+      fileType: 'image/jpeg', // Convert to JPEG for better compression
+    };
+
+    try {
+      const compressedFile = await imageCompression(file, options);
+      console.log(`Compressed ${file.name}: ${(file.size / 1024 / 1024).toFixed(2)}MB -> ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`);
+      return compressedFile;
+    } catch (error) {
+      console.error('Error compressing image:', error);
+      return file; // Return original if compression fails
+    }
+  };
 
   const handleFileSelect = useCallback(
-    (files: FileList | null) => {
+    async (files: FileList | null) => {
       if (!files) return;
 
       const fileArray = Array.from(files);
@@ -45,19 +65,33 @@ export default function ImageUpload({
         return;
       }
 
-      const newImages: ImageFile[] = filesToAdd.map((file) => ({
-        id: Math.random().toString(36).substr(2, 9),
-        file,
-        preview: URL.createObjectURL(file),
-        isPrimary: images.length === 0, // First image is primary by default
-      }));
+      setCompressing(true);
 
-      onChange([...images, ...newImages]);
-
-      if (filesToAdd.length < fileArray.length) {
-        alert(
-          `Only ${filesToAdd.length} images added. Maximum of ${maxImages} images allowed.`
+      try {
+        // Compress all images
+        const compressedFiles = await Promise.all(
+          filesToAdd.map(file => compressImage(file))
         );
+
+        const newImages: ImageFile[] = compressedFiles.map((file) => ({
+          id: Math.random().toString(36).substr(2, 9),
+          file,
+          preview: URL.createObjectURL(file),
+          isPrimary: images.length === 0, // First image is primary by default
+        }));
+
+        onChange([...images, ...newImages]);
+
+        if (filesToAdd.length < fileArray.length) {
+          alert(
+            `Only ${filesToAdd.length} images added. Maximum of ${maxImages} images allowed.`
+          );
+        }
+      } catch (error) {
+        console.error('Error processing images:', error);
+        alert('Error processing images. Please try again.');
+      } finally {
+        setCompressing(false);
       }
     },
     [images, onChange, maxImages]
@@ -134,6 +168,7 @@ export default function ImageUpload({
                 ? "border-blue-500 bg-blue-50"
                 : "border-gray-300 hover:border-gray-400"
             }
+            ${compressing ? "opacity-50 cursor-wait" : ""}
           `}
         >
           <input
@@ -143,15 +178,33 @@ export default function ImageUpload({
             accept="image/*"
             multiple
             onChange={(e) => handleFileSelect(e.target.files)}
+            disabled={compressing}
           />
-          <label htmlFor="image-upload" className="cursor-pointer">
-            <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-            <p className="text-sm text-gray-600 mb-2">
-              Drag and drop images here, or click to browse
-            </p>
-            <p className="text-xs text-gray-500">
-              Maximum {maxImages} images • JPG, PNG, GIF supported
-            </p>
+          <label htmlFor="image-upload" className={compressing ? "cursor-wait" : "cursor-pointer"}>
+            {compressing ? (
+              <>
+                <div className="w-12 h-12 mx-auto mb-4 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                <p className="text-sm text-gray-600 mb-2 font-medium">
+                  Compressing images...
+                </p>
+                <p className="text-xs text-gray-500">
+                  Please wait while we optimize your images
+                </p>
+              </>
+            ) : (
+              <>
+                <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                <p className="text-sm text-gray-600 mb-2">
+                  Drag and drop images here, or click to browse
+                </p>
+                <p className="text-xs text-gray-500">
+                  Maximum {maxImages} images • JPG, PNG, GIF supported
+                </p>
+                <p className="text-xs text-green-600 mt-2">
+                  ✓ Images automatically compressed for faster upload
+                </p>
+              </>
+            )}
           </label>
         </div>
       )}
@@ -212,9 +265,16 @@ export default function ImageUpload({
       )}
 
       {images.length > 0 && (
-        <p className="text-xs text-gray-500">
-          Click the star icon to set an image as the primary (poster) image
-        </p>
+        <>
+          <p className="text-xs text-gray-500 mb-2">
+            Click the star icon to set an image as the primary (poster) image
+          </p>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p className="text-xs text-blue-900">
+              <strong>💡 Pro tip:</strong> High-quality images get 3x more inquiries! Upload up to {maxImages} images to showcase your property's best features.
+            </p>
+          </div>
+        </>
       )}
     </div>
   );
