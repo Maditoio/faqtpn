@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/Button'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import ImageUpload, { ImageFile } from '@/components/ImageUpload'
 import LocationAutocomplete from '@/components/LocationAutocomplete'
+import PurchasePhotosModal from '@/components/PurchasePhotosModal'
+import { getPhotoLimitInfo } from '@/lib/photo-limits'
 
 interface EditPropertyPageProps {
   params: Promise<{ id: string }>
@@ -25,6 +27,10 @@ export default function EditPropertyPage({ params }: EditPropertyPageProps) {
   const [images, setImages] = useState<ImageFile[]>([])
   const [existingImages, setExistingImages] = useState<any[]>([])
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([])
+  const [propertyPlan, setPropertyPlan] = useState<string>('basic')
+  const [maxImages, setMaxImages] = useState<number>(3)
+  const [walletBalance, setWalletBalance] = useState<number>(0)
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -85,6 +91,21 @@ export default function EditPropertyPage({ params }: EditPropertyPageProps) {
         
         const data = await response.json()
         const property = data.property || data
+        
+        // Get property plan and limits
+        setPropertyPlan(property.listingPlan || 'basic')
+        setMaxImages(property.maxImages || 3)
+        
+        // Fetch wallet balance
+        try {
+          const walletResponse = await fetch('/api/wallet')
+          if (walletResponse.ok) {
+            const walletData = await walletResponse.json()
+            setWalletBalance(walletData.wallet?.balance || 0)
+          }
+        } catch (err) {
+          console.error('Failed to fetch wallet balance:', err)
+        }
         
         setFormData({
           title: property.title || '',
@@ -162,6 +183,28 @@ export default function EditPropertyPage({ params }: EditPropertyPageProps) {
         ? prev.filter(a => a !== amenity)
         : [...prev, amenity]
     )
+  }
+
+  const handlePurchaseSuccess = (newLimit: number, newBalance: number) => {
+    setMaxImages(newLimit)
+    setWalletBalance(newBalance)
+  }
+
+  const handleImageChange = (newImages: ImageFile[]) => {
+    const photoLimitInfo = getPhotoLimitInfo(propertyPlan, newImages.length)
+    
+    // If trying to add more photos than the current limit
+    if (newImages.length > images.length && newImages.length > maxImages) {
+      // Check if user has wallet balance
+      if (walletBalance >= 5) {
+        setShowPurchaseModal(true)
+      } else {
+        alert(`You've reached your photo limit of ${maxImages}. You need wallet balance to add more photos (R5 per photo).`)
+        return
+      }
+    }
+    
+    setImages(newImages)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -495,11 +538,49 @@ export default function EditPropertyPage({ params }: EditPropertyPageProps) {
               </p>
             </div>
 
-            <ImageUpload 
-              images={images}
-              onChange={setImages}
-              maxImages={15}
-            />
+            <div className="space-y-4">
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <h4 className="font-semibold text-gray-900">Photo Upload Limit</h4>
+                    <p className="text-sm text-gray-600">Based on your {propertyPlan} plan</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-blue-600">{images.length} / {maxImages}</p>
+                    <p className="text-xs text-gray-500">photos uploaded</p>
+                  </div>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${Math.min(100, (images.length / maxImages) * 100)}%` }}
+                  />
+                </div>
+                {images.length >= maxImages && (
+                  <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    <p className="text-sm text-yellow-800">
+                      ⚠️ You've reached your limit! Need more photos? 
+                      <button
+                        type="button"
+                        onClick={() => setShowPurchaseModal(true)}
+                        className="font-semibold underline hover:text-yellow-900 ml-1"
+                      >
+                        Purchase extra slots for R5 each
+                      </button>
+                    </p>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Your wallet balance: R{walletBalance.toFixed(2)}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <ImageUpload 
+                images={images}
+                onChange={handleImageChange}
+                maxImages={maxImages}
+              />
+            </div>
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-900">
@@ -530,6 +611,16 @@ export default function EditPropertyPage({ params }: EditPropertyPageProps) {
         </Card>
       </div>
     </div>
+
+      <PurchasePhotosModal
+        isOpen={showPurchaseModal}
+        onClose={() => setShowPurchaseModal(false)}
+        propertyId={propertyId}
+        currentPhotoCount={images.length}
+        planLimit={maxImages}
+        walletBalance={walletBalance}
+        onPurchaseSuccess={handlePurchaseSuccess}
+      />
     </>
   )
 }

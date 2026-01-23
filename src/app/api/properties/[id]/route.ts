@@ -158,6 +158,22 @@ export async function PATCH(
         where: { propertyId: id },
       })
 
+      // Calculate total images after update
+      const totalImages = images.existing.length + images.new.length
+      const maxAllowed = property.maxImages || 3
+
+      // Validate photo limit
+      if (totalImages > maxAllowed) {
+        return NextResponse.json(
+          { 
+            error: `Photo limit exceeded. Your plan allows ${maxAllowed} photos, but you're trying to upload ${totalImages}. Please purchase additional photo slots or remove some photos.`,
+            maxImages: maxAllowed,
+            currentImages: totalImages
+          },
+          { status: 400 }
+        )
+      }
+
       // Delete all existing images
       await prisma.propertyImage.deleteMany({
         where: { propertyId: id },
