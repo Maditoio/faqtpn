@@ -16,14 +16,26 @@ interface Stats {
 export default function Home() {
   const router = useRouter()
   const [stats, setStats] = useState<Stats>({ total: 0, approved: 0, locations: 0 })
+  const [creditRate, setCreditRate] = useState<number>(10) // Default 10%
 
   useEffect(() => {
+    // Fetch property stats
     fetch('/api/properties/stats')
       .then((res) => res.json())
       .then((data) => {
         setStats(data)
         // Update browser tab title with property count
         document.title = `Faqtpn - ${data.approved} Properties Available`
+      })
+      .catch(console.error)
+
+    // Fetch credit rate from public endpoint
+    fetch('/api/settings/credit-rate')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.creditRate) {
+          setCreditRate(data.creditRate)
+        }
       })
       .catch(console.error)
   }, [])
@@ -53,6 +65,9 @@ export default function Home() {
               Discover thousands of rental properties in your area. 
               From cozy studios to spacious family homes.
             </p>
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 px-6 rounded-full inline-block mb-6 shadow-2xl">
+              <p className="text-lg font-bold">💰 List Your Property & Get {creditRate}% Cash Back Into Your Wallet!</p>
+            </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/properties">
@@ -173,11 +188,11 @@ export default function Home() {
                 </div>
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3 mt-6">
-                Easy Listing
+                List & Earn Cash Back
               </h3>
               <p className="text-gray-600">
-                Property owners can list their rentals in minutes with our 
-                simple and intuitive listing process.
+                Listing doesn't have to cost an arm and a leg! Get {creditRate}% real cash back 
+                for every property you list - directly into your wallet. Everyone deserves something back.
               </p>
             </div>
           </div>
@@ -245,6 +260,39 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Cash Back Banner */}
+      <section className="py-16 bg-gradient-to-r from-green-500 via-emerald-600 to-green-500">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="inline-block bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full mb-4">
+              <p className="text-white font-bold text-sm">💎 EXCLUSIVE BENEFIT</p>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+              Get Real Cash Back On Every Listing
+            </h2>
+            <p className="text-xl text-white/95 mb-8 max-w-3xl mx-auto">
+              Listing your property doesn't have to cost an arm and a leg. When you list with us, 
+              we credit <span className="font-bold text-yellow-300">{creditRate}% of your listing fee</span> directly back into your wallet as real cash. 
+              Use it for future listings or withdraw it. <span className="font-bold">Everyone deserves something back.</span>
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+              <div className="bg-white/10 backdrop-blur-md border-2 border-white/30 rounded-xl p-6">
+                <div className="text-3xl font-bold text-yellow-300 mb-2">R4.90</div>
+                <div className="text-white text-sm">Cash back on R49 listing</div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-md border-2 border-white/30 rounded-xl p-6">
+                <div className="text-3xl font-bold text-yellow-300 mb-2">R6.40</div>
+                <div className="text-white text-sm">Cash back on R64 listing</div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-md border-2 border-white/30 rounded-xl p-6">
+                <div className="text-3xl font-bold text-yellow-300 mb-2">R7.40</div>
+                <div className="text-white text-sm">Cash back on R74 listing</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-20 bg-blue-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -252,7 +300,7 @@ export default function Home() {
             Ready to Find Your Next Home?
           </h2>
           <p className="text-xl text-blue-100 mb-8">
-            Join thousands of happy renters and property owners on Faqtpn
+            Join thousands of happy renters and property owners earning cash back on Faqtpn
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link 

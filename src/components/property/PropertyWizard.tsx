@@ -40,6 +40,10 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([])
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [cardNumber, setCardNumber] = useState('')
+  const [expiryDate, setExpiryDate] = useState('')
+  const [cvv, setCvv] = useState('')
+  const [cardErrors, setCardErrors] = useState({ cardNumber: '', expiryDate: '', cvv: '' })
   
   const [formData, setFormData] = useState({
     title: '',
@@ -375,7 +379,128 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
     setShowPaymentModal(true)
   }
 
+  const validateCardNumber = (number: string): boolean => {
+    // Remove spaces and check if it's 16 digits
+    const cleaned = number.replace(/\s/g, '')
+    if (!/^\d{16}$/.test(cleaned)) {
+      setCardErrors(prev => ({ ...prev, cardNumber: 'Card number must be 16 digits' }))
+      return false
+    }
+    
+    // Luhn algorithm for card validation
+    let sum = 0
+    let isEven = false
+    for (let i = cleaned.length - 1; i >= 0; i--) {
+      let digit = parseInt(cleaned[i])
+      if (isEven) {
+        digit *= 2
+        if (digit > 9) digit -= 9
+      }
+      sum += digit
+      isEven = !isEven
+    }
+    
+    if (sum % 10 !== 0) {
+      setCardErrors(prev => ({ ...prev, cardNumber: 'Invalid card number' }))
+      return false
+    }
+    
+    setCardErrors(prev => ({ ...prev, cardNumber: '' }))
+    return true
+  }
+
+  const validateExpiryDate = (expiry: string): boolean => {
+    const cleaned = expiry.replace(/\//g, '')
+    if (!/^\d{4}$/.test(cleaned)) {
+      setCardErrors(prev => ({ ...prev, expiryDate: 'Format: MM/YY' }))
+      return false
+    }
+    
+    const month = parseInt(cleaned.substring(0, 2))
+    const year = parseInt('20' + cleaned.substring(2, 4))
+    
+    if (month < 1 || month > 12) {
+      setCardErrors(prev => ({ ...prev, expiryDate: 'Invalid month' }))
+      return false
+    }
+    
+    const now = new Date()
+    const currentYear = now.getFullYear()
+    const currentMonth = now.getMonth() + 1
+    
+    if (year < currentYear || (year === currentYear && month < currentMonth)) {
+      setCardErrors(prev => ({ ...prev, expiryDate: 'Card expired' }))
+      return false
+    }
+    
+    setCardErrors(prev => ({ ...prev, expiryDate: '' }))
+    return true
+  }
+
+  const validateCVV = (cvvValue: string): boolean => {
+    if (!/^\d{3,4}$/.test(cvvValue)) {
+      setCardErrors(prev => ({ ...prev, cvv: 'CVV must be 3 or 4 digits' }))
+      return false
+    }
+    setCardErrors(prev => ({ ...prev, cvv: '' }))
+    return true
+  }
+
+  const formatCardNumber = (value: string) => {
+    const cleaned = value.replace(/\s/g, '')
+    const formatted = cleaned.match(/.{1,4}/g)?.join(' ') || cleaned
+    return formatted.substring(0, 19) // Max 16 digits + 3 spaces
+  }
+
+  const formatExpiryDate = (value: string) => {
+    const cleaned = value.replace(/\D/g, '')
+    if (cleaned.length >= 2) {
+      return cleaned.substring(0, 2) + '/' + cleaned.substring(2, 4)
+    }
+    return cleaned
+  }
+
+  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCardNumber(e.target.value)
+    setCardNumber(formatted)
+    if (formatted.replace(/\s/g, '').length === 16) {
+      validateCardNumber(formatted)
+    } else if (cardErrors.cardNumber) {
+      setCardErrors(prev => ({ ...prev, cardNumber: '' }))
+    }
+  }
+
+  const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatExpiryDate(e.target.value)
+    setExpiryDate(formatted)
+    if (formatted.length === 5) {
+      validateExpiryDate(formatted)
+    } else if (cardErrors.expiryDate) {
+      setCardErrors(prev => ({ ...prev, expiryDate: '' }))
+    }
+  }
+
+  const handleCVVChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '').substring(0, 4)
+    setCvv(value)
+    if (value.length >= 3) {
+      validateCVV(value)
+    } else if (cardErrors.cvv) {
+      setCardErrors(prev => ({ ...prev, cvv: '' }))
+    }
+  }
+
   const handlePayment = async () => {
+    // Validate all fields
+    const isCardValid = validateCardNumber(cardNumber)
+    const isExpiryValid = validateExpiryDate(expiryDate)
+    const isCVVValid = validateCVV(cvv)
+    
+    if (!isCardValid || !isExpiryValid || !isCVVValid) {
+      showToast('Please correct the card details', 'error')
+      return
+    }
+    
     setIsProcessing(true)
     
     // Simulate payment processing
@@ -943,38 +1068,58 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
 
             <div className="space-y-4 mb-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-900 mb-2">
                   Card Number
                 </label>
                 <input
                   type="text"
                   placeholder="1234 5678 9012 3456"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={cardNumber}
+                  onChange={handleCardNumberChange}
+                  onBlur={() => cardNumber && validateCardNumber(cardNumber)}
+                  className={`w-full px-4 py-3 border ${cardErrors.cardNumber ? 'border-red-500' : 'border-gray-300'} focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500`}
                   disabled={isProcessing}
                 />
+                {cardErrors.cardNumber && (
+                  <p className="text-red-600 text-sm mt-1">{cardErrors.cardNumber}</p>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     Expiry Date
                   </label>
                   <input
                     type="text"
                     placeholder="MM/YY"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={expiryDate}
+                    onChange={handleExpiryChange}
+                    onBlur={() => expiryDate && validateExpiryDate(expiryDate)}
+                    maxLength={5}
+                    className={`w-full px-4 py-3 border ${cardErrors.expiryDate ? 'border-red-500' : 'border-gray-300'} focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500`}
                     disabled={isProcessing}
                   />
+                  {cardErrors.expiryDate && (
+                    <p className="text-red-600 text-sm mt-1">{cardErrors.expiryDate}</p>
+                  )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     CVV
                   </label>
                   <input
                     type="text"
                     placeholder="123"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={cvv}
+                    onChange={handleCVVChange}
+                    onBlur={() => cvv && validateCVV(cvv)}
+                    maxLength={4}
+                    className={`w-full px-4 py-3 border ${cardErrors.cvv ? 'border-red-500' : 'border-gray-300'} focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500`}
                     disabled={isProcessing}
                   />
+                  {cardErrors.cvv && (
+                    <p className="text-red-600 text-sm mt-1">{cardErrors.cvv}</p>
+                  )}
                 </div>
               </div>
             </div>
