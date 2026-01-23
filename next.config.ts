@@ -1,6 +1,18 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Force dynamic rendering to avoid React 19 SSR issues
+  experimental: {
+    // Disable worker threads that cause prerendering issues
+    workerThreads: false,
+    cpus: 1,
+  },
+  
+  // Disable static generation
+  generateBuildId: async () => {
+    return 'build-' + Date.now()
+  },
+  
   // Image optimization
   images: {
     remotePatterns: [
