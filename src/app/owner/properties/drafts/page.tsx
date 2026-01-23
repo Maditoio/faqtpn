@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { OwnerPropertyNav } from '@/components/owner/OwnerPropertyNav'
 
 interface Draft {
@@ -24,6 +25,12 @@ export default function DraftsPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [drafts, setDrafts] = useState<Draft[]>([])
+  const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; draftId: string | null; title: string }>({
+    isOpen: false,
+    draftId: null,
+    title: '',
+  })
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     fetchDrafts()
@@ -47,22 +54,33 @@ export default function DraftsPage() {
     router.push(`/owner/properties/new?draft=${draftId}`)
   }
 
-  const handleDelete = async (draftId: string) => {
-    if (!confirm('Are you sure you want to delete this draft?')) return
+  const handleDeleteClick = (draftId: string, title: string) => {
+    setDeleteDialog({
+      isOpen: true,
+      draftId,
+      title,
+    })
+  }
 
+  const handleDeleteConfirm = async () => {
+    if (!deleteDialog.draftId) return
+
+    setDeleting(true)
     try {
-      const response = await fetch(`/api/properties/${draftId}`, {
+      const response = await fetch(`/api/properties/${deleteDialog.draftId}`, {
         method: 'DELETE',
       })
 
       if (response.ok) {
-        setDrafts(drafts.filter(d => d.id !== draftId))
+        setDrafts(drafts.filter(d => d.id !== deleteDialog.draftId))
+        setDeleteDialog({ isOpen: false, draftId: null, title: '' })
       } else {
-        alert('Failed to delete draft')
+        console.error('Failed to delete draft')
       }
     } catch (error) {
       console.error('Error deleting draft:', error)
-      alert('Failed to delete draft')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -183,7 +201,7 @@ export default function DraftsPage() {
                     <Button
                       variant="secondary"
                       size="sm"
-                      onClick={() => handleDelete(draft.id)}
+                      onClick={() => handleDeleteClick(draft.id, draft.title)}
                     >
                       Delete
                     </Button>
@@ -194,6 +212,19 @@ export default function DraftsPage() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteDialog.isOpen}
+        onClose={() => setDeleteDialog({ isOpen: false, draftId: null, title: '' })}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Draft?"
+        message={`Are you sure you want to delete "${deleteDialog.title}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={deleting}
+      />
     </div>
   )
 }

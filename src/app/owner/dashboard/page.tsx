@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { IconButton } from '@/components/ui/IconButton'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { PlusIcon, EditIcon, TrashIcon, HeartIcon } from '@/components/icons/Icons'
 import Link from 'next/link'
 import { OwnerPropertyNav } from '@/components/owner/OwnerPropertyNav'
@@ -19,6 +20,18 @@ export default function OwnerDashboard() {
   const [loading, setLoading] = useState(true)
   const [rentingProperty, setRentingProperty] = useState<string | null>(null)
   const [showContactBanner, setShowContactBanner] = useState(false)
+  const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; propertyId: string | null; title: string }>({
+    isOpen: false,
+    propertyId: null,
+    title: '',
+  })
+  const [rentDialog, setRentDialog] = useState<{ isOpen: boolean; propertyId: string | null; title: string }>({
+    isOpen: false,
+    propertyId: null,
+    title: '',
+  })
+  const [deleting, setDeleting] = useState(false)
+  const [notificationsSent, setNotificationsSent] = useState(0)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -50,45 +63,59 @@ export default function OwnerDashboard() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this property?')) {
-      return
-    }
+  const handleDeleteClick = (id: string, title: string) => {
+    setDeleteDialog({
+      isOpen: true,
+      propertyId: id,
+      title,
+    })
+  }
 
+  const handleDeleteConfirm = async () => {
+    if (!deleteDialog.propertyId) return
+
+    setDeleting(true)
     try {
-      const response = await fetch(`/api/properties/${id}`, {
+      const response = await fetch(`/api/properties/${deleteDialog.propertyId}`, {
         method: 'DELETE',
       })
 
       if (response.ok) {
-        fetchProperties()
+        await fetchProperties()
+        setDeleteDialog({ isOpen: false, propertyId: null, title: '' })
       }
     } catch (error) {
       console.error('Error deleting property:', error)
+    } finally {
+      setDeleting(false)
     }
   }
 
-  const handleMarkAsRented = async (id: string) => {
-    if (!confirm('Mark this property as rented? All users who favorited it will be notified that it\'s no longer available.')) {
-      return
-    }
+  const handleMarkAsRentedClick = (id: string, title: string) => {
+    setRentDialog({
+      isOpen: true,
+      propertyId: id,
+      title,
+    })
+  }
 
-    setRentingProperty(id)
+  const handleMarkAsRentedConfirm = async () => {
+    if (!rentDialog.propertyId) return
+
+    setRentingProperty(rentDialog.propertyId)
     try {
-      const response = await fetch(`/api/properties/${id}/rent`, {
+      const response = await fetch(`/api/properties/${rentDialog.propertyId}/rent`, {
         method: 'POST',
       })
 
       if (response.ok) {
         const data = await response.json()
-        alert(`Property marked as rented! ${data.notificationsSent} users notified.`)
-        fetchProperties()
-      } else {
-        alert('Failed to mark property as rented')
+        setNotificationsSent(data.notificationsSent)
+        await fetchProperties()
+        setRentDialog({ isOpen: false, propertyId: null, title: '' })
       }
     } catch (error) {
       console.error('Error marking property as rented:', error)
-      alert('Error marking property as rented')
     } finally {
       setRentingProperty(null)
     }
@@ -295,7 +322,7 @@ export default function OwnerDashboard() {
                           <Button
                             variant="primary"
                             size="sm"
-                            onClick={() => handleMarkAsRented(property.id)}
+                            onClick={() => handleMarkAsRentedClick(property.id, property.title)}
                             disabled={rentingProperty === property.id}
                           >
                             {rentingProperty === property.id ? 'Processing...' : 'Mark as Rented'}
@@ -315,7 +342,7 @@ export default function OwnerDashboard() {
                               icon={<TrashIcon className="w-5 h-5" />}
                               variant="danger"
                               size="md"
-                              onClick={() => handleDelete(property.id)}
+                              onClick={() => handleDeleteClick(property.id, property.title)}
                               label="Delete"
                             />
                           </>
@@ -329,6 +356,32 @@ export default function OwnerDashboard() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteDialog.isOpen}
+        onClose={() => setDeleteDialog({ isOpen: false, propertyId: null, title: '' })}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Property?"
+        message={`Are you sure you want to delete "${deleteDialog.title}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={deleting}
+      />
+
+      {/* Mark as Rented Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={rentDialog.isOpen}
+        onClose={() => setRentDialog({ isOpen: false, propertyId: null, title: '' })}
+        onConfirm={handleMarkAsRentedConfirm}
+        title="Mark as Rented?"
+        message={`Are you sure you want to mark "${rentDialog.title}" as rented? All users who favorited this property will be notified that it's no longer available.`}
+        confirmText="Mark as Rented"
+        cancelText="Cancel"
+        variant="warning"
+        isLoading={rentingProperty !== null}
+      />
     </div>
   )
 }

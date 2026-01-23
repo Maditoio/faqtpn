@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 
 interface UserProfile {
   id: string
@@ -28,6 +29,8 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [showAlertsDialog, setShowAlertsDialog] = useState(false)
+  const [updatingAlerts, setUpdatingAlerts] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -104,6 +107,27 @@ export default function ProfilePage() {
     // Clear error for this field
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
+    }
+  }
+
+  const handleToggleAlerts = async () => {
+    setUpdatingAlerts(true)
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ alertsConsent: !profile?.alertsConsent }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setProfile(data.user)
+        setShowAlertsDialog(false)
+      }
+    } catch (error) {
+      console.error('Error updating alerts consent:', error)
+    } finally {
+      setUpdatingAlerts(false)
     }
   }
 
@@ -271,26 +295,11 @@ export default function ProfilePage() {
               <Button
                 variant={profile.alertsConsent ? 'secondary' : 'primary'}
                 size="sm"
-                onClick={async () => {
-                  if (profile.alertsConsent && !confirm('Are you sure you want to disable alerts? Your saved alerts will not send notifications.')) {
-                    return
-                  }
-                  
-                  try {
-                    const response = await fetch('/api/profile', {
-                      method: 'PATCH',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ alertsConsent: !profile.alertsConsent }),
-                    })
-
-                    if (response.ok) {
-                      const data = await response.json()
-                      setProfile(data.user)
-                      alert(profile.alertsConsent ? 'Alerts disabled' : 'Alerts enabled!')
-                    }
-                  } catch (error) {
-                    console.error('Error updating alerts consent:', error)
-                    alert('Failed to update alerts setting')
+                onClick={() => {
+                  if (profile.alertsConsent) {
+                    setShowAlertsDialog(true)
+                  } else {
+                    handleToggleAlerts()
                   }
                 }}
               >
@@ -345,6 +354,19 @@ export default function ProfilePage() {
           </ul>
         </Card>
       </div>
+
+      {/* Alerts Consent Dialog */}
+      <ConfirmDialog
+        isOpen={showAlertsDialog}
+        onClose={() => setShowAlertsDialog(false)}
+        onConfirm={handleToggleAlerts}
+        title="Disable Property Alerts?"
+        message="Are you sure you want to disable alerts? Your saved alerts will not send notifications until you re-enable them."
+        confirmText="Disable Alerts"
+        cancelText="Keep Enabled"
+        variant="warning"
+        isLoading={updatingAlerts}
+      />
     </div>
   )
 }

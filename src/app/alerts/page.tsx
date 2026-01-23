@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { Badge } from '@/components/ui/Badge'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import Link from 'next/link'
 
 interface PropertyAlert {
@@ -33,6 +34,12 @@ export default function AlertsPage() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingAlert, setEditingAlert] = useState<PropertyAlert | null>(null)
+  const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; alertId: string | null; name: string }>({
+    isOpen: false,
+    alertId: null,
+    name: '',
+  })
+  const [deleting, setDeleting] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     location: '',
@@ -121,23 +128,31 @@ export default function AlertsPage() {
     setShowForm(true)
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this alert?')) {
-      return
-    }
+  const handleDeleteClick = (id: string, name: string) => {
+    setDeleteDialog({
+      isOpen: true,
+      alertId: id,
+      name,
+    })
+  }
 
+  const handleDeleteConfirm = async () => {
+    if (!deleteDialog.alertId) return
+
+    setDeleting(true)
     try {
-      const response = await fetch(`/api/alerts/${id}`, {
+      const response = await fetch(`/api/alerts/${deleteDialog.alertId}`, {
         method: 'DELETE',
       })
 
       if (response.ok) {
         await fetchAlerts()
-        alert('Alert deleted!')
+        setDeleteDialog({ isOpen: false, alertId: null, name: '' })
       }
     } catch (error) {
       console.error('Error deleting alert:', error)
-      alert('Error deleting alert')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -446,7 +461,7 @@ export default function AlertsPage() {
                       ✏️
                     </button>
                     <button
-                      onClick={() => handleDelete(alert.id)}
+                      onClick={() => handleDeleteClick(alert.id, alert.name)}
                       className="p-2 text-red-600 hover:bg-red-50 rounded-md"
                       title="Delete alert"
                     >
@@ -459,6 +474,19 @@ export default function AlertsPage() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteDialog.isOpen}
+        onClose={() => setDeleteDialog({ isOpen: false, alertId: null, name: '' })}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Alert?"
+        message={`Are you sure you want to delete the alert "${deleteDialog.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={deleting}
+      />
     </div>
   )
 }
