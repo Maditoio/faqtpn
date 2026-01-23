@@ -5,6 +5,10 @@ import { getCurrentUser } from '@/lib/authorization'
 import cacheManager, { CacheKeys, CacheTTL, invalidateCache } from '@/lib/cache'
 import { sendListingConfirmationEmail } from '@/lib/email'
 
+// Configure API route
+export const dynamic = 'force-dynamic'
+export const maxDuration = 60 // 60 seconds timeout
+
 /**
  * GET /api/properties
  * Get all properties with optional search and filters
@@ -237,10 +241,19 @@ export async function POST(req: NextRequest) {
       { message: 'Property created successfully', property },
       { status: 201 }
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating property:', error)
+    
+    // Handle specific error types
+    if (error.message?.includes('Request Entity Too Large')) {
+      return NextResponse.json(
+        { error: 'Images are too large. Please compress them and try again. Maximum total size is 4.5MB.' },
+        { status: 413 }
+      )
+    }
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error.message },
       { status: 500 }
     )
   }
