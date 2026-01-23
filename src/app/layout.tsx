@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers/Providers";
 import { Navbar } from "@/components/layout/Navbar";
+import { SecondaryNav } from "@/components/layout/SecondaryNav";
 import CookieConsent from "@/components/CookieConsent";
 
 const inter = Inter({
@@ -25,6 +26,7 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased`}>
         <Providers>
           <Navbar />
+          <SecondaryNav />
           <main>{children}</main>
           <CookieConsent />
         </Providers>

@@ -234,6 +234,81 @@ export async function POST(req: NextRequest) {
 
     console.log('✅ Property created successfully:', property.id)
 
+    // Process agent commission if property was referred and is paid
+    if (property.referredBy && property.paymentStatus === 'paid' && property.listingPrice) {
+      try {
+        // Get agent profile and commission rate
+        const agentProfile = await prisma.agentProfile.findUnique({
+          where: { userId: property.referredBy }
+        })
+
+        if (agentProfile) {
+          const commissionRate = agentProfile.commissionRate.toNumber() / 100
+          const commissionAmount = property.listingPrice.toNumber() * commissionRate
+
+          // Get or create agent wallet
+          let wallet = await prisma.wallet.findUnique({
+            where: { userId: property.referredBy }
+          })
+
+          if (!wallet) {
+            wallet = await prisma.wallet.create({
+              data: { userId: property.referredBy }
+            })
+          }
+
+          // Create transaction in a Prisma transaction
+          await prisma.$transaction(async (tx) => {
+            // Update wallet balance
+            const updatedWallet = await tx.wallet.update({
+              where: { id: wallet!.id },
+              data: {
+                balance: { increment: commissionAmount },
+                totalEarned: { increment: commissionAmount }
+              }
+            })
+
+            // Create transaction record
+            await tx.walletTransaction.create({
+              data: {
+                walletId: wallet!.id,
+                type: 'CREDIT',
+                amount: commissionAmount,
+                description: `Commission from property listing: ${property.title}`,
+                referenceType: 'COMMISSION',
+                referenceId: property.id,
+                balanceBefore: updatedWallet.balance.toNumber() - commissionAmount,
+                balanceAfter: updatedWallet.balance.toNumber()
+              }
+            })
+
+            // Update property commission status
+            await tx.property.update({
+              where: { id: property.id },
+              data: {
+                commissionPaid: true,
+                commissionAmount: commissionAmount
+              }
+            })
+
+            // Update agent stats
+            await tx.agentProfile.update({
+              where: { id: agentProfile.id },
+              data: {
+                totalEarnings: { increment: commissionAmount },
+                totalReferrals: { increment: 1 }
+              }
+            })
+          })
+
+          console.log(`✅ Commission of R${commissionAmount} credited to agent ${property.referredBy}`)
+        }
+      } catch (commissionError) {
+        console.error('❌ Error processing commission:', commissionError)
+        // Don't fail the property creation if commission fails
+      }
+    }
+
     // Invalidate caches after creating property
     invalidateCache.property(property.id)
     invalidateCache.owner(user.id)
