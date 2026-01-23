@@ -65,8 +65,8 @@ export default function Home() {
               Discover thousands of rental properties in your area. 
               From cozy studios to spacious family homes.
             </p>
-            <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 px-6 rounded-full inline-block mb-6 shadow-2xl">
-              <p className="text-lg font-bold">💰 List Your Property & Get {creditRate}% Cash Back Into Your Wallet!</p>
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 px-6 rounded-lg inline-block mb-6 shadow-2xl">
+              <p className="text-lg font-semibold">List Your Property & Get Cash Back Into Your Wallet</p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -191,8 +191,8 @@ export default function Home() {
                 List & Earn Cash Back
               </h3>
               <p className="text-gray-600">
-                Listing doesn't have to cost an arm and a leg! Get {creditRate}% real cash back 
-                for every property you list - directly into your wallet. Everyone deserves something back.
+                Affordable property listing with rewards. Earn cash back credits 
+                for every property you list, directly into your wallet for future use.
               </p>
             </div>
           </div>
@@ -264,29 +264,22 @@ export default function Home() {
       <section className="py-16 bg-gradient-to-r from-green-500 via-emerald-600 to-green-500">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <div className="inline-block bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full mb-4">
-              <p className="text-white font-bold text-sm">💎 EXCLUSIVE BENEFIT</p>
+            <div className="inline-block bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg mb-4">
+              <p className="text-white font-semibold text-sm tracking-wide">EXCLUSIVE BENEFIT</p>
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
               Get Real Cash Back On Every Listing
             </h2>
             <p className="text-xl text-white/95 mb-8 max-w-3xl mx-auto">
-              Listing your property doesn't have to cost an arm and a leg. When you list with us, 
-              we credit <span className="font-bold text-yellow-300">{creditRate}% of your listing fee</span> directly back into your wallet. 
-              Use it for future listings, upgrade your plan, or add more images to your properties. <span className="font-bold">Everyone deserves something back.</span>
+              Listing your property doesn't have to be expensive. When you list with us, 
+              we credit <span className="font-bold text-yellow-300">a percentage of your listing fee</span> directly back into your wallet. 
+              Use it for future listings, upgrade your plan, or add more images to your properties.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-              <div className="bg-white/10 backdrop-blur-md border-2 border-white/30 rounded-xl p-6">
-                <div className="text-3xl font-bold text-yellow-300 mb-2">R4.90</div>
-                <div className="text-white text-sm">Cash back on R49 listing</div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-md border-2 border-white/30 rounded-xl p-6">
-                <div className="text-3xl font-bold text-yellow-300 mb-2">R6.40</div>
-                <div className="text-white text-sm">Cash back on R64 listing</div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-md border-2 border-white/30 rounded-xl p-6">
-                <div className="text-3xl font-bold text-yellow-300 mb-2">R7.40</div>
-                <div className="text-white text-sm">Cash back on R74 listing</div>
+            <div className="bg-white/10 backdrop-blur-md border-2 border-white/30 rounded-xl p-8 max-w-2xl mx-auto">
+              <div className="text-center">
+                <div className="text-5xl font-bold text-yellow-300 mb-3">{creditRate}%</div>
+                <div className="text-white text-lg font-semibold mb-2">Current Cash Back Rate</div>
+                <div className="text-white/80 text-sm">Earn credits on every property you list</div>
               </div>
             </div>
           </div>
