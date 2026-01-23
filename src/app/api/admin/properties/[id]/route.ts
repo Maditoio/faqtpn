@@ -106,6 +106,68 @@ export async function PATCH(
       notificationMessage = `Great news! Your property "${property.title}" has been approved and is now live on our platform.`
       notificationType = 'PROPERTY_APPROVED'
       
+      // Credit wallet if property was paid and hasn't been credited yet
+      if (property.paymentStatus === 'paid' && property.listingPrice && !property.commissionAmount) {
+        // Get system settings for credit rate
+        let creditRate = 10.0 // Default 10%
+        const creditSetting = await prisma.systemSettings.findUnique({
+          where: { key: 'owner_credit_rate' }
+        })
+        if (creditSetting) {
+          creditRate = parseFloat(creditSetting.value)
+        }
+        
+        const creditAmount = Math.round(property.listingPrice.toNumber() * (creditRate / 100))
+
+        // Find or create wallet
+        let wallet = await prisma.wallet.findUnique({
+          where: { userId: property.ownerId },
+        })
+
+        if (!wallet) {
+          wallet = await prisma.wallet.create({
+            data: {
+              userId: property.ownerId,
+              balance: 0,
+              totalEarned: 0,
+              totalSpent: 0,
+            },
+          })
+        }
+
+        // Create transaction in a Prisma transaction
+        await prisma.$transaction(async (tx) => {
+          // Update wallet balance
+          const updatedWallet = await tx.wallet.update({
+            where: { id: wallet!.id },
+            data: {
+              balance: { increment: creditAmount },
+              totalEarned: { increment: creditAmount }
+            }
+          })
+
+          // Create transaction record
+          await tx.walletTransaction.create({
+            data: {
+              walletId: wallet!.id,
+              type: 'CREDIT',
+              amount: creditAmount,
+              description: `Credits earned from listing: ${property.title}`,
+              referenceType: 'LISTING',
+              referenceId: property.id,
+              balanceBefore: updatedWallet.balance.toNumber() - creditAmount,
+              balanceAfter: updatedWallet.balance.toNumber()
+            }
+          })
+
+          // Update property with commission amount
+          await tx.property.update({
+            where: { id: property.id },
+            data: { commissionAmount: creditAmount },
+          })
+        })
+      }
+      
       // Also notify users who have favorited properties in the same location
       const usersWithFavoritesInLocation = property.location
         ? await prisma.user.findMany({
