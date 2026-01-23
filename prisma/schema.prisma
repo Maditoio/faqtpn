@@ -122,6 +122,15 @@ model Property {
   ownerId       String         @map("owner_id")
   latitude      Decimal?       @db.Decimal(10, 8)
   longitude     Decimal?       @db.Decimal(11, 8)
+  
+  // Listing pricing and payment
+  listingPlan   String?        @default("basic") @map("listing_plan") // basic, standard, premium
+  maxImages     Int            @default(3) @map("max_images") // Based on selected plan
+  listingPrice  Decimal?       @default(49.00) @db.Decimal(10, 2) @map("listing_price") // Amount paid
+  paidAt        DateTime?      @map("paid_at") // When payment was made
+  expiresAt     DateTime?      @map("expires_at") // When listing expires (3 months from payment)
+  paymentStatus String?        @default("pending") @map("payment_status") // pending, paid, expired
+  
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @updatedAt @map("updated_at")
 
@@ -137,6 +146,8 @@ model Property {
   @@index([location])
   @@index([bedrooms, bathrooms])
   @@index([availableFrom])
+  @@index([paymentStatus])
+  @@index([expiresAt])
   @@map("properties")
 }
 

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input'
 import { TextArea } from '@/components/ui/TextArea'
 import ImageUpload, { ImageFile } from '@/components/ImageUpload'
 import LocationAutocomplete from '@/components/LocationAutocomplete'
+import PricingSelector, { pricingPlans } from '@/components/property/PricingSelector'
 import { CheckIcon } from '@/components/icons/Icons'
 
 interface PropertyWizardProps {
@@ -21,13 +22,15 @@ const steps = [
   { id: 4, name: 'Pricing', description: 'Set your rental price' },
   { id: 5, name: 'Requirements', description: 'Deposit and utilities' },
   { id: 6, name: 'Amenities', description: 'Additional features' },
-  { id: 7, name: 'Photos', description: 'Upload property images' },
+  { id: 7, name: 'Listing Plan', description: 'Choose your plan' },
+  { id: 8, name: 'Photos', description: 'Upload property images' },
 ]
 
 export default function PropertyWizard({ draftId, initialData }: PropertyWizardProps) {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
   const [saving, setSaving] = useState(false)
+  const [listingPlan, setListingPlan] = useState('basic')
   const [autoSaving, setAutoSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [propertyId, setPropertyId] = useState<string | undefined>(draftId)
@@ -364,6 +367,8 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
   const submitProperty = async () => {
     setSaving(true)
     try {
+      const selectedPlanData = pricingPlans.find(p => p.id === listingPlan)
+      
       // Update status to PENDING for submission
       const submitData: any = {
         title: formData.title,
@@ -375,6 +380,13 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
         bathrooms: parseInt(formData.bathrooms),
         amenities: selectedAmenities,
         status: 'PENDING',
+        // Add pricing plan data
+        listingPlan: listingPlan,
+        maxImages: selectedPlanData?.maxImages || 3,
+        listingPrice: selectedPlanData?.price || 49,
+        paymentStatus: 'paid', // Simulated payment
+        paidAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(), // 3 months from now
       }
 
       // Add optional location fields
@@ -490,7 +502,9 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
       case 6:
         return true // Amenities are optional
       case 7:
-        return images.length > 0
+        return listingPlan !== '' // Pricing plan must be selected
+      case 8:
+        return images.length > 0 && images.length <= (pricingPlans.find(p => p.id === listingPlan)?.maxImages || 3)
       default:
         return false
     }
@@ -796,17 +810,27 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
               </div>
             )}
 
-            {/* Step 7: Photos */}
+            {/* Step 7: Listing Plan */}
             {currentStep === 7 && (
+              <div>
+                <PricingSelector 
+                  selectedPlan={listingPlan}
+                  onSelectPlan={setListingPlan}
+                />
+              </div>
+            )}
+
+            {/* Step 8: Photos */}
+            {currentStep === 8 && (
               <div>
                 <ImageUpload 
                   images={images}
                   onChange={setImages}
-                  maxImages={15}
+                  maxImages={pricingPlans.find(p => p.id === listingPlan)?.maxImages || 3}
                 />
                 <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <p className="text-sm text-blue-900">
-                    <strong>Note:</strong> High-quality photos attract more renters. Upload at least 5 images for best results.
+                    <strong>Note:</strong> You can upload up to {pricingPlans.find(p => p.id === listingPlan)?.maxImages || 3} images with your {pricingPlans.find(p => p.id === listingPlan)?.name || 'Basic'} plan. High-quality photos attract more renters!
                   </p>
                 </div>
               </div>
@@ -864,13 +888,24 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
             
             <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 mb-6">
               <div className="flex justify-between items-center mb-4">
-                <span className="text-gray-800 font-semibold text-lg">Standard Listing (3 months)</span>
-                <span className="text-2xl font-bold text-blue-600">R149</span>
+                <span className="text-gray-800 font-semibold text-lg">
+                  {pricingPlans.find(p => p.id === listingPlan)?.name} Plan (3 months)
+                </span>
+                <span className="text-2xl font-bold text-blue-600">
+                  R{pricingPlans.find(p => p.id === listingPlan)?.price}
+                </span>
+              </div>
+              <div className="text-sm text-gray-600 mb-4">
+                • Up to {pricingPlans.find(p => p.id === listingPlan)?.maxImages} property images<br/>
+                • 3 months active listing<br/>
+                • Full property details
               </div>
               <div className="border-t border-blue-200 pt-4">
                 <div className="flex justify-between items-center">
                   <span className="text-xl font-bold text-gray-900">Total</span>
-                  <span className="text-3xl font-bold text-gray-900">R149</span>
+                  <span className="text-3xl font-bold text-gray-900">
+                    R{pricingPlans.find(p => p.id === listingPlan)?.price}
+                  </span>
                 </div>
               </div>
             </div>
