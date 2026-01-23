@@ -46,6 +46,19 @@ export const propertySchema = z.object({
   depositMonths: z.number().int().min(1).max(12).optional(),
   bankStatementsMonths: z.number().int().min(1).max(12).optional(),
   status: z.enum(['DRAFT', 'PENDING', 'APPROVED', 'SUSPENDED', 'RENTED', 'DELETED']).optional(),
+  // Payment and listing plan fields
+  listingPlan: z.enum(['basic', 'standard', 'premium']).optional(),
+  maxImages: z.number().int().min(3).max(20).optional(),
+  listingPrice: z.number().positive().optional(),
+  paymentStatus: z.enum(['pending', 'paid', 'failed']).optional(),
+  paidAt: z.union([z.string(), z.date()]).transform(val => {
+    if (typeof val === 'string') return new Date(val)
+    return val
+  }).optional(),
+  expiresAt: z.union([z.string(), z.date()]).transform(val => {
+    if (typeof val === 'string') return new Date(val)
+    return val
+  }).optional(),
 })
 
 // Relaxed schema for drafts - only title is required
@@ -76,6 +89,19 @@ export const draftPropertySchema = z.object({
   depositMonths: z.number().int().min(1).max(12).optional(),
   bankStatementsMonths: z.number().int().min(1).max(12).optional(),
   status: z.enum(['DRAFT', 'PENDING', 'APPROVED', 'SUSPENDED', 'RENTED', 'DELETED']).optional(),
+  // Payment and listing plan fields
+  listingPlan: z.enum(['basic', 'standard', 'premium']).optional(),
+  maxImages: z.number().int().min(3).max(20).optional(),
+  listingPrice: z.number().positive().optional(),
+  paymentStatus: z.enum(['pending', 'paid', 'failed']).optional(),
+  paidAt: z.union([z.string(), z.date()]).transform(val => {
+    if (typeof val === 'string') return new Date(val)
+    return val
+  }).optional(),
+  expiresAt: z.union([z.string(), z.date()]).transform(val => {
+    if (typeof val === 'string') return new Date(val)
+    return val
+  }).optional(),
 })
 
 export const propertyUpdateSchema = propertySchema.partial()
