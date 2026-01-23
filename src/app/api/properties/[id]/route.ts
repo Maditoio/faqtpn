@@ -250,6 +250,66 @@ export async function PATCH(
       await Promise.all(notifications)
     }
 
+    // Process wallet credits if payment status changed to paid and not already credited
+    const paymentStatusChanged = body.paymentStatus === 'paid'
+    if (paymentStatusChanged && 
+        !property.commissionAmount && 
+        updatedProperty.listingPrice) {
+      try {
+        let creditRate = 10.0
+        const creditSetting = await prisma.systemSettings.findUnique({
+          where: { key: 'owner_credit_rate' }
+        })
+        if (creditSetting) {
+          creditRate = parseFloat(creditSetting.value)
+        }
+
+        const creditAmount = updatedProperty.listingPrice.toNumber() * (creditRate / 100)
+
+        let wallet = await prisma.wallet.findUnique({
+          where: { userId: property.ownerId }
+        })
+
+        if (!wallet) {
+          wallet = await prisma.wallet.create({
+            data: { userId: property.ownerId }
+          })
+        }
+
+        await prisma.$transaction(async (tx) => {
+          const updatedWallet = await tx.wallet.update({
+            where: { id: wallet!.id },
+            data: {
+              balance: { increment: creditAmount },
+              totalEarned: { increment: creditAmount }
+            }
+          })
+
+          await tx.walletTransaction.create({
+            data: {
+              walletId: wallet!.id,
+              type: 'CREDIT',
+              amount: creditAmount,
+              description: `Credits earned from listing: ${property.title}`,
+              referenceType: 'LISTING',
+              referenceId: property.id,
+              balanceBefore: updatedWallet.balance.toNumber() - creditAmount,
+              balanceAfter: updatedWallet.balance.toNumber()
+            }
+          })
+
+          await tx.property.update({
+            where: { id },
+            data: { commissionAmount: creditAmount }
+          })
+        })
+
+        console.log(`✅ Credits of R${creditAmount} added to owner ${property.ownerId} wallet`)
+      } catch (creditError) {
+        console.error('❌ Error processing credits:', creditError)
+      }
+    }
+
     // Invalidate caches
     invalidateCache.property(id)
     invalidateCache.owner(property.ownerId)
