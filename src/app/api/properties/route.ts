@@ -327,8 +327,10 @@ export async function POST(req: NextRequest) {
     console.log('✅ Property created successfully:', property.id)
 
     // Process wallet credits for property owner automatically
-    if (property.paymentStatus === 'paid' && property.listingPrice) {
+    // ONLY credit wallet if they paid with CARD, not if they paid with wallet
+    if (property.paymentStatus === 'paid' && property.listingPrice && paymentMethod !== 'wallet') {
       try {
+        console.log('💰 Crediting wallet for CARD payment:', property.id)
         // Get default credit rate from settings (default 10% back as credits)
         let creditRate = 10.0 // 10% default
         const creditSetting = await prisma.systemSettings.findUnique({
