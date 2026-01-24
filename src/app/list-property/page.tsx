@@ -203,7 +203,7 @@ export default function ListPropertyPage() {
             <div className="bg-white shadow-2xl border-4 border-blue-500 overflow-hidden transform scale-105 pointer-events-none select-none">
               <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white text-center py-4">
                 <div className="inline-block bg-yellow-400 text-blue-900 px-2 py-1 text-xs font-bold mb-1">
-                  🎉 MOST POPULAR
+                  MOST POPULAR
                 </div>
                 <h3 className="text-xl font-bold mb-1">Standard</h3>
                 <p className="text-blue-100 text-sm">Best value for most properties</p>
@@ -344,7 +344,7 @@ export default function ListPropertyPage() {
             onClick={handleGetStarted}
             className="!py-3 !px-8 !text-base font-bold !bg-white !text-blue-700 hover:!bg-blue-50 shadow-lg"
           >
-            Start Listing Now →
+            Start Listing Now
           </Button>
 
           <p className="text-blue-100 mt-4 text-sm">
