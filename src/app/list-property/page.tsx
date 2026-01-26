@@ -36,26 +36,17 @@ export default function ListPropertyPage() {
               Reach 2.5M+ renters monthly. Get your property rented fast with our simple 3-step process.
             </p>
             <div className="flex items-center justify-center gap-6 text-sm">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">👥</span>
-                <div className="text-left">
-                  <p className="font-bold text-xl">2.5M+</p>
-                  <p className="text-blue-100 text-xs">Monthly Visitors</p>
-                </div>
+              <div className="text-center">
+                <p className="font-bold text-xl">2.5M+</p>
+                <p className="text-blue-100 text-xs">Monthly Visitors</p>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">🏠</span>
-                <div className="text-left">
-                  <p className="font-bold text-xl">15K+</p>
-                  <p className="text-blue-100 text-xs">Properties Listed</p>
-                </div>
+              <div className="text-center">
+                <p className="font-bold text-xl">15K+</p>
+                <p className="text-blue-100 text-xs">Properties Listed</p>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">⚡</span>
-                <div className="text-left">
-                  <p className="font-bold text-xl">48hrs</p>
-                  <p className="text-blue-100 text-xs">Average Match Time</p>
-                </div>
+              <div className="text-center">
+                <p className="font-bold text-xl">48hrs</p>
+                <p className="text-blue-100 text-xs">Average Match Time</p>
               </div>
             </div>
           </div>
@@ -73,9 +64,6 @@ export default function ListPropertyPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           <div className="bg-white p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-shadow">
-            <div className="w-12 h-12 bg-blue-100 flex items-center justify-center mb-4">
-              <span className="text-3xl">🎯</span>
-            </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">Targeted Reach</h3>
             <p className="text-gray-700 text-base leading-relaxed">
               Your property is shown to 2.5 million serious renters every month. No time-wasters, just qualified tenants.
@@ -83,9 +71,6 @@ export default function ListPropertyPage() {
           </div>
 
           <div className="bg-white p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-shadow">
-            <div className="w-12 h-12 bg-green-100 flex items-center justify-center mb-4">
-              <span className="text-3xl">💰</span>
-            </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">Affordable Pricing</h3>
             <p className="text-gray-700 text-base leading-relaxed">
               List your property starting from just R49 for 3 months. Choose from flexible plans with 3, 10, or 20 photos.
@@ -93,9 +78,6 @@ export default function ListPropertyPage() {
           </div>
 
           <div className="bg-white p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-shadow">
-            <div className="w-12 h-12 bg-purple-100 flex items-center justify-center mb-4">
-              <span className="text-3xl">🚀</span>
-            </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">Quick & Easy</h3>
             <p className="text-gray-700 text-base leading-relaxed">
               List your property in minutes. Our simple 3-step process gets your listing live fast.
