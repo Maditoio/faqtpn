@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useCallback } from 'react'
-import { GoogleMap, LoadScript, Marker, InfoWindow } from '@react-google-maps/api'
+import { GoogleMap, useLoadScript, Marker, InfoWindow } from '@react-google-maps/api'
 import Link from 'next/link'
 import Image from 'next/image'
 
@@ -40,6 +40,10 @@ export function PropertyMap({ properties, center, zoom = 11 }: PropertyMapProps)
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''
 
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: apiKey,
+  })
+
   // Filter properties that have valid coordinates
   const validProperties = properties.filter(
     (p) => p.latitude && p.longitude && !isNaN(p.latitude) && !isNaN(p.longitude)
@@ -72,6 +76,25 @@ export function PropertyMap({ properties, center, zoom = 11 }: PropertyMapProps)
     )
   }
 
+  if (loadError) {
+    return (
+      <div className="flex items-center justify-center h-[600px] bg-gray-100 rounded-lg">
+        <p className="text-gray-600">Error loading maps</p>
+      </div>
+    )
+  }
+
+  if (!isLoaded) {
+    return (
+      <div className="flex items-center justify-center h-[600px] bg-gray-100 rounded-lg">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading map...</p>
+        </div>
+      </div>
+    )
+  }
+
   if (validProperties.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-[600px] bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
@@ -85,94 +108,94 @@ export function PropertyMap({ properties, center, zoom = 11 }: PropertyMapProps)
     )
   }
 
-  return (
-    <LoadScript googleMapsApiKey={apiKey}>
-      <GoogleMap
-        mapContainerStyle={mapContainerStyle}
-        center={mapCenter}
-        zoom={zoom}
-        onClick={onMapClick}
-        options={{
-          streetViewControl: false,
-          mapTypeControl: false,
-          fullscreenControl: true,
-          zoomControl: true,
-        }}
-      >
-        {validProperties.map((property) => (
-          <Marker
-            key={property.id}
-            position={{
-              lat: property.latitude!,
-              lng: property.longitude!,
-            }}
-            onClick={() => onMarkerClick(property)}
-            icon={{
-              url: 'data:image/svg+xml;base64,' + btoa(`
-                <svg width="40" height="50" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M20 0C11.716 0 5 6.716 5 15c0 11.25 15 35 15 35s15-23.75 15-35c0-8.284-6.716-15-15-15z" fill="#2563eb"/>
-                  <circle cx="20" cy="15" r="8" fill="white"/>
-                  <text x="20" y="20" text-anchor="middle" fill="#2563eb" font-size="12" font-weight="bold">R</text>
-                </svg>
-              `),
-              scaledSize: new google.maps.Size(40, 50),
-            }}
-          />
-        ))}
+  const markerIcon = {
+    url: 'data:image/svg+xml;base64,' + btoa(`
+      <svg width="40" height="50" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20 0C11.716 0 5 6.716 5 15c0 11.25 15 35 15 35s15-23.75 15-35c0-8.284-6.716-15-15-15z" fill="#2563eb"/>
+        <circle cx="20" cy="15" r="8" fill="white"/>
+        <text x="20" y="20" text-anchor="middle" fill="#2563eb" font-size="12" font-weight="bold">R</text>
+      </svg>
+    `),
+    scaledSize: typeof google !== 'undefined' ? new google.maps.Size(40, 50) : undefined,
+  }
 
-        {selectedProperty && (
-          <InfoWindow
-            position={{
-              lat: selectedProperty.latitude!,
-              lng: selectedProperty.longitude!,
-            }}
-            onCloseClick={() => setSelectedProperty(null)}
-          >
-            <div className="max-w-xs">
-              <Link href={`/properties/${selectedProperty.id}`} className="block">
-                {selectedProperty.images && selectedProperty.images.length > 0 ? (
-                  <div className="relative w-full h-32 mb-2">
-                    <Image
-                      src={selectedProperty.images[0].url}
-                      alt={selectedProperty.images[0].altText || selectedProperty.title}
-                      fill
-                      className="object-cover rounded"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-full h-32 bg-gray-200 rounded mb-2 flex items-center justify-center">
-                    <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                    </svg>
-                  </div>
-                )}
-                
-                <h3 className="font-bold text-gray-900 mb-1 hover:text-blue-600">
-                  {selectedProperty.title}
-                </h3>
-                
-                <p className="text-lg font-bold text-blue-600 mb-1">
-                  R{selectedProperty.price.toLocaleString()}/month
-                </p>
-                
-                <div className="flex items-center gap-3 text-sm text-gray-600 mb-2">
-                  <span>{selectedProperty.bedrooms} bed</span>
-                  <span>•</span>
-                  <span>{selectedProperty.bathrooms} bath</span>
+  return (
+    <GoogleMap
+      mapContainerStyle={mapContainerStyle}
+      center={mapCenter}
+      zoom={zoom}
+      onClick={onMapClick}
+      options={{
+        streetViewControl: false,
+        mapTypeControl: false,
+        fullscreenControl: true,
+        zoomControl: true,
+      }}
+    >
+      {validProperties.map((property) => (
+        <Marker
+          key={property.id}
+          position={{
+            lat: property.latitude!,
+            lng: property.longitude!,
+          }}
+          onClick={() => onMarkerClick(property)}
+          icon={markerIcon}
+        />
+      ))}
+
+      {selectedProperty && (
+        <InfoWindow
+          position={{
+            lat: selectedProperty.latitude!,
+            lng: selectedProperty.longitude!,
+          }}
+          onCloseClick={() => setSelectedProperty(null)}
+        >
+          <div className="max-w-xs">
+            <Link href={`/properties/${selectedProperty.id}`} className="block">
+              {selectedProperty.images && selectedProperty.images.length > 0 ? (
+                <div className="relative w-full h-32 mb-2">
+                  <Image
+                    src={selectedProperty.images[0].url}
+                    alt={selectedProperty.images[0].altText || selectedProperty.title}
+                    fill
+                    className="object-cover rounded"
+                  />
                 </div>
-                
-                <p className="text-xs text-gray-500 mb-2">
-                  {selectedProperty.location}
-                </p>
-                
-                <p className="text-blue-600 text-sm font-medium hover:underline">
-                  View Details →
-                </p>
-              </Link>
-            </div>
-          </InfoWindow>
-        )}
-      </GoogleMap>
-    </LoadScript>
+              ) : (
+                <div className="w-full h-32 bg-gray-200 rounded mb-2 flex items-center justify-center">
+                  <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                  </svg>
+                </div>
+              )}
+              
+              <h3 className="font-bold text-gray-900 mb-1 hover:text-blue-600">
+                {selectedProperty.title}
+              </h3>
+              
+              <p className="text-lg font-bold text-blue-600 mb-1">
+                R{selectedProperty.price.toLocaleString()}/month
+              </p>
+              
+              <div className="flex items-center gap-3 text-sm text-gray-600 mb-2">
+                <span>{selectedProperty.bedrooms} bed</span>
+                <span>•</span>
+                <span>{selectedProperty.bathrooms} bath</span>
+              </div>
+              
+              <p className="text-xs text-gray-500 mb-2">
+                {selectedProperty.location}
+              </p>
+              
+              <p className="text-blue-600 text-sm font-medium hover:underline">
+                View Details →
+              </p>
+            </Link>
+          </div>
+        </InfoWindow>
+      )}
+    </GoogleMap>
   )
 }
