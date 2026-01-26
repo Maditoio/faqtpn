@@ -37,6 +37,7 @@ export default function PropertiesPage() {
     bedrooms: '',
     bathrooms: '',
   })
+  const [mapBounds, setMapBounds] = useState<google.maps.LatLngBounds | null>(null)
   const [showFilters, setShowFilters] = useState(true)
   const [showAlertPrompt, setShowAlertPrompt] = useState(false)
   const [searchPerformed, setSearchPerformed] = useState(false)
@@ -95,6 +96,15 @@ export default function PropertiesPage() {
     setShowAlertPrompt(false)
     try {
       const params = new URLSearchParams()
+      
+      // Add map bounds if searching by area
+      if (mapBounds) {
+        const ne = mapBounds.getNorthEast()
+        const sw = mapBounds.getSouthWest()
+        params.append('northEast', `${ne.lat()},${ne.lng()}`)
+        params.append('southWest', `${sw.lat()},${sw.lng()}`)
+      }
+      
       if (filters.location) params.append('location', filters.location)
       if (filters.propertyType) params.append('propertyType', filters.propertyType)
       if (filters.minPrice) params.append('minPrice', filters.minPrice)
@@ -108,7 +118,7 @@ export default function PropertiesPage() {
       setProperties(results)
       
       // Show alert prompt if user searched with filters and got no/few results
-      const hasActiveFilters = filters.location || filters.propertyType || filters.minPrice || filters.bedrooms
+      const hasActiveFilters = filters.location || filters.propertyType || filters.minPrice || filters.bedrooms || mapBounds
       if (searchPerformed && hasActiveFilters && results.length <= 2 && session) {
         setShowAlertPrompt(true)
       }
@@ -121,12 +131,20 @@ export default function PropertiesPage() {
 
   const handleLocationClick = (location: string) => {
     setFilters({ ...filters, location })
+    setMapBounds(null) // Clear map bounds when using text search
     setTimeout(() => fetchProperties(), 0)
   }
 
   const handleSearch = () => {
     setSearchPerformed(true)
+    setMapBounds(null) // Clear map bounds when using text search
     fetchProperties()
+  }
+
+  const handleMapBoundsChanged = (bounds: google.maps.LatLngBounds) => {
+    setMapBounds(bounds)
+    setSearchPerformed(true)
+    setTimeout(() => fetchProperties(), 0)
   }
 
   const handleCreateAlert = async () => {
@@ -327,7 +345,7 @@ export default function PropertiesPage() {
                 <LoadingSpinner size="lg" />
               </div>
             ) : viewMode === 'map' ? (
-              <PropertyMap properties={properties} />
+              <PropertyMap properties={properties} onBoundsChanged={handleMapBoundsChanged} />
             ) : properties.length === 0 ? (
               <div className="text-center py-12">
                 <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">

@@ -180,27 +180,36 @@ export default function AdminDashboard() {
 
         {/* Tabs */}
         <div className="mb-6 border-b border-gray-200">
-          <div className="flex space-x-8">
-            <button
-              onClick={() => setActiveTab('properties')}
-              className={`pb-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'properties'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+          <div className="flex justify-between items-center">
+            <div className="flex space-x-8">
+              <button
+                onClick={() => setActiveTab('properties')}
+                className={`pb-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'properties'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Properties ({properties.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('users')}
+                className={`pb-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'users'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Users ({users.length})
+              </button>
+            </div>
+            <Button
+              onClick={() => router.push('/admin/settings')}
+              variant="outline"
+              className="mb-4"
             >
-              Properties ({properties.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('users')}
-              className={`pb-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'users'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Users ({users.length})
-            </button>
+              Settings
+            </Button>
           </div>
         </div>
 

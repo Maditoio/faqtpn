@@ -135,6 +135,8 @@ export const propertySearchSchema = z.object({
   maxPrice: z.number().optional(),
   bedrooms: z.number().int().optional(),
   bathrooms: z.number().int().optional(),
+  northEast: z.string().optional(), // "lat,lng" format for map bounds
+  southWest: z.string().optional(), // "lat,lng" format for map bounds
   page: z.number().int().positive().optional(),
   limit: z.number().int().positive().max(100).optional(),
 })

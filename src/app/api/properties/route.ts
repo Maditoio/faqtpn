@@ -25,6 +25,8 @@ export async function GET(req: NextRequest) {
       maxPrice: searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined,
       bedrooms: searchParams.get('bedrooms') ? Number(searchParams.get('bedrooms')) : undefined,
       bathrooms: searchParams.get('bathrooms') ? Number(searchParams.get('bathrooms')) : undefined,
+      northEast: searchParams.get('northEast') || undefined,
+      southWest: searchParams.get('southWest') || undefined,
       page: searchParams.get('page') ? Number(searchParams.get('page')) : 1,
       limit: searchParams.get('limit') ? Number(searchParams.get('limit')) : 20,
     }
@@ -39,7 +41,7 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    const { query, location, propertyType, minPrice, maxPrice, bedrooms, bathrooms, page, limit } = validationResult.data
+    const { query, location, propertyType, minPrice, maxPrice, bedrooms, bathrooms, northEast, southWest, page, limit } = validationResult.data
 
     // Build where clause
     const where: any = {
@@ -73,6 +75,17 @@ export async function GET(req: NextRequest) {
 
     if (bathrooms !== undefined) {
       where.bathrooms = { gte: bathrooms }
+    }
+
+    // Add geographic bounds filtering if provided
+    if (northEast && southWest) {
+      const [neLat, neLng] = northEast.split(',').map(Number)
+      const [swLat, swLng] = southWest.split(',').map(Number)
+      
+      if (!isNaN(neLat) && !isNaN(neLng) && !isNaN(swLat) && !isNaN(swLng)) {
+        where.latitude = { gte: swLat, lte: neLat }
+        where.longitude = { gte: swLng, lte: neLng }
+      }
     }
 
     // Calculate pagination
