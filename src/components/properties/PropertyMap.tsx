@@ -44,10 +44,22 @@ export function PropertyMap({ properties, center, zoom = 11 }: PropertyMapProps)
     googleMapsApiKey: apiKey,
   })
 
-  // Filter properties that have valid coordinates
-  const validProperties = properties.filter(
-    (p) => p.latitude && p.longitude && !isNaN(p.latitude) && !isNaN(p.longitude)
-  )
+  // Filter properties that have valid coordinates and convert to numbers
+  const validProperties = properties
+    .map((p) => ({
+      ...p,
+      latitude: p.latitude ? Number(p.latitude) : undefined,
+      longitude: p.longitude ? Number(p.longitude) : undefined,
+    }))
+    .filter(
+      (p) =>
+        p.latitude !== undefined &&
+        p.longitude !== undefined &&
+        !isNaN(p.latitude) &&
+        !isNaN(p.longitude) &&
+        isFinite(p.latitude) &&
+        isFinite(p.longitude)
+    )
 
   const onMarkerClick = useCallback((property: Property) => {
     setSelectedProperty(property)
@@ -64,9 +76,13 @@ export function PropertyMap({ properties, center, zoom = 11 }: PropertyMapProps)
         validProperties.reduce((sum, p) => sum + (p.latitude || 0), 0) / validProperties.length
       const avgLng =
         validProperties.reduce((sum, p) => sum + (p.longitude || 0), 0) / validProperties.length
-      setMapCenter({ lat: avgLat, lng: avgLng })
+      
+      // Ensure center has valid values
+      if (!isNaN(avgLat) && !isNaN(avgLng) && isFinite(avgLat) && isFinite(avgLng)) {
+        setMapCenter({ lat: avgLat, lng: avgLng })
+      }
     }
-  }, [validProperties, center])
+  }, [validProperties.length, center])
 
   if (!apiKey) {
     return (
