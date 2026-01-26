@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { PropertyCard } from '@/components/properties/PropertyCard'
+import { PropertyMap } from '@/components/properties/PropertyMap'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
@@ -16,6 +17,8 @@ interface Property {
   location: string
   bedrooms: number
   bathrooms: number
+  latitude?: number
+  longitude?: number
   status: string
   images?: Array<{ url: string; altText?: string | null }>
   _count?: { favorites: number }
@@ -38,6 +41,7 @@ export default function PropertiesPage() {
   const [showAlertPrompt, setShowAlertPrompt] = useState(false)
   const [searchPerformed, setSearchPerformed] = useState(false)
   const [creatingAlert, setCreatingAlert] = useState(false)
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
 
   useEffect(() => {
     fetchProperties()
@@ -229,15 +233,58 @@ export default function PropertiesPage() {
         </div>
       </div>
 
+      {/* View Mode Toggle */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
+        <div className="flex items-center justify-between">
+          <p className="text-gray-600">
+            {loading ? 'Loading...' : `${properties.length} ${properties.length === 1 ? 'property' : 'properties'} found`}
+          </p>
+          <div className="flex gap-2 bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+                List
+              </div>
+            </button>
+            <button
+              onClick={() => setViewMode('map')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                viewMode === 'map'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                </svg>
+                Map
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Main Content - Properties Grid + Sidebar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Properties Grid - Left Side */}
+          {/* Properties Grid/Map - Left Side */}
           <div className="flex-1">
             {loading ? (
               <div className="flex justify-center py-12">
                 <LoadingSpinner size="lg" />
               </div>
+            ) : viewMode === 'map' ? (
+              <PropertyMap properties={properties} />
             ) : properties.length === 0 ? (
               <div className="text-center py-12">
                 <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
