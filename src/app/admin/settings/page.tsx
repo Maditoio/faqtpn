@@ -26,18 +26,36 @@ export default async function AdminSettingsPage() {
     })
   }
 
+  // Get or create map feature toggle setting
+  let mapFeatureSetting = await prisma.systemSettings.findUnique({
+    where: { key: 'enable_map_view' }
+  })
+
+  if (!mapFeatureSetting) {
+    mapFeatureSetting = await prisma.systemSettings.create({
+      data: {
+        key: 'enable_map_view',
+        value: 'true',
+        description: 'Enable or disable map view feature for all users'
+      }
+    })
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4 max-w-4xl">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">System Settings</h1>
 
         <div className="bg-white p-6 shadow mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Owner Wallet Credit Settings</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Property Features</h2>
           <p className="text-gray-600 mb-6">
-            Configure the percentage of listing price that property owners receive as wallet credits when they list properties.
+            Configure which features are available for users when browsing properties.
           </p>
 
-          <SettingsForm initialRate={creditSetting.value} />
+          <SettingsForm 
+            initialRate={creditSetting.value}
+            initialMapEnabled={mapFeatureSetting.value === 'true'}
+          />
         </div>
 
         <div className="bg-white p-6 shadow">
