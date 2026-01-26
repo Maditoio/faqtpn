@@ -62,9 +62,28 @@ export default function PropertiesPage() {
 
   const fetchMapFeatureSetting = async () => {
     try {
+      // Check localStorage cache first (valid for 5 minutes)
+      const cached = localStorage.getItem('mapFeatureEnabled')
+      const cacheTimestamp = localStorage.getItem('mapFeatureTimestamp')
+      
+      if (cached !== null && cacheTimestamp) {
+        const age = Date.now() - parseInt(cacheTimestamp)
+        if (age < 5 * 60 * 1000) { // 5 minutes
+          setMapFeatureEnabled(cached === 'true')
+          return
+        }
+      }
+
+      // Fetch from API if cache is stale or missing
       const response = await fetch('/api/settings/map-feature')
       const data = await response.json()
-      setMapFeatureEnabled(data.mapEnabled ?? true)
+      const enabled = data.mapEnabled ?? true
+      
+      setMapFeatureEnabled(enabled)
+      
+      // Update cache
+      localStorage.setItem('mapFeatureEnabled', enabled.toString())
+      localStorage.setItem('mapFeatureTimestamp', Date.now().toString())
     } catch (error) {
       console.error('Error fetching map feature setting:', error)
       setMapFeatureEnabled(true) // Default to enabled if error
@@ -296,7 +315,7 @@ export default function PropertiesPage() {
             {loading ? 'Loading...' : `${properties.length} ${properties.length === 1 ? 'property' : 'properties'} found`}
           </p>
         </div>
-      )}mapFeatureEnabled && 
+      )}
 
       {/* Main Content - Properties Grid + Sidebar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
