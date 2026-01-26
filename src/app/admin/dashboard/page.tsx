@@ -205,7 +205,7 @@ export default function AdminDashboard() {
             </div>
             <Button
               onClick={() => router.push('/admin/settings')}
-              variant="outline"
+              variant="secondary"
               className="mb-4"
             >
               Settings
