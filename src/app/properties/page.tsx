@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { PropertyCard } from '@/components/properties/PropertyCard'
 import { PropertyMap } from '@/components/properties/PropertyMap'
 import { Input } from '@/components/ui/Input'
@@ -44,11 +44,18 @@ export default function PropertiesPage() {
   const [creatingAlert, setCreatingAlert] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
   const [mapFeatureEnabled, setMapFeatureEnabled] = useState(false)
+  const propertiesRequestRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
-    fetchProperties()
-    fetchPopularLocations()
-    fetchMapFeatureSetting()
+    void Promise.all([
+      fetchProperties(),
+      fetchPopularLocations(),
+      fetchMapFeatureSetting(),
+    ])
+
+    return () => {
+      propertiesRequestRef.current?.abort()
+    }
   }, [])
 
   const fetchPopularLocations = async () => {
@@ -91,60 +98,90 @@ export default function PropertiesPage() {
     }
   }
 
-  const fetchProperties = async () => {
+  const fetchProperties = async (options?: {
+    nextFilters?: typeof filters
+    nextMapBounds?: google.maps.LatLngBounds | null
+  }) => {
+    const effectiveFilters = options?.nextFilters ?? filters
+    const effectiveMapBounds = options?.nextMapBounds ?? mapBounds
+
+    propertiesRequestRef.current?.abort()
+    const controller = new AbortController()
+    propertiesRequestRef.current = controller
+
     setLoading(true)
     setShowAlertPrompt(false)
+
     try {
       const params = new URLSearchParams()
       
       // Add map bounds if searching by area
-      if (mapBounds) {
-        const ne = mapBounds.getNorthEast()
-        const sw = mapBounds.getSouthWest()
+      if (effectiveMapBounds) {
+        const ne = effectiveMapBounds.getNorthEast()
+        const sw = effectiveMapBounds.getSouthWest()
         params.append('northEast', `${ne.lat()},${ne.lng()}`)
         params.append('southWest', `${sw.lat()},${sw.lng()}`)
       }
       
-      if (filters.location) params.append('location', filters.location)
-      if (filters.propertyType) params.append('propertyType', filters.propertyType)
-      if (filters.minPrice) params.append('minPrice', filters.minPrice)
-      if (filters.maxPrice) params.append('maxPrice', filters.maxPrice)
-      if (filters.bedrooms) params.append('bedrooms', filters.bedrooms)
-      if (filters.bathrooms) params.append('bathrooms', filters.bathrooms)
+      if (effectiveFilters.location) params.append('location', effectiveFilters.location)
+      if (effectiveFilters.propertyType) params.append('propertyType', effectiveFilters.propertyType)
+      if (effectiveFilters.minPrice) params.append('minPrice', effectiveFilters.minPrice)
+      if (effectiveFilters.maxPrice) params.append('maxPrice', effectiveFilters.maxPrice)
+      if (effectiveFilters.bedrooms) params.append('bedrooms', effectiveFilters.bedrooms)
+      if (effectiveFilters.bathrooms) params.append('bathrooms', effectiveFilters.bathrooms)
 
-      const response = await fetch(`/api/properties?${params}`)
+      const response = await fetch(`/api/properties?${params}`, {
+        signal: controller.signal,
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch properties')
+      }
+
       const data = await response.json()
       const results = data.properties || []
       setProperties(results)
       
       // Show alert prompt if user searched with filters and got no/few results
-      const hasActiveFilters = filters.location || filters.propertyType || filters.minPrice || filters.bedrooms || mapBounds
+      const hasActiveFilters =
+        !!effectiveFilters.location ||
+        !!effectiveFilters.propertyType ||
+        !!effectiveFilters.minPrice ||
+        !!effectiveFilters.bedrooms ||
+        !!effectiveMapBounds
+
       if (searchPerformed && hasActiveFilters && results.length <= 2 && session) {
         setShowAlertPrompt(true)
       }
     } catch (error) {
+      if ((error as Error).name === 'AbortError') {
+        return
+      }
       console.error('Error fetching properties:', error)
     } finally {
-      setLoading(false)
+      if (propertiesRequestRef.current === controller) {
+        setLoading(false)
+      }
     }
   }
 
   const handleLocationClick = (location: string) => {
-    setFilters({ ...filters, location })
+    const nextFilters = { ...filters, location }
+    setFilters(nextFilters)
     setMapBounds(null) // Clear map bounds when using text search
-    setTimeout(() => fetchProperties(), 0)
+    void fetchProperties({ nextFilters, nextMapBounds: null })
   }
 
   const handleSearch = () => {
     setSearchPerformed(true)
     setMapBounds(null) // Clear map bounds when using text search
-    fetchProperties()
+    void fetchProperties({ nextFilters: filters, nextMapBounds: null })
   }
 
   const handleMapBoundsChanged = (bounds: google.maps.LatLngBounds) => {
     setMapBounds(bounds)
     setSearchPerformed(true)
-    setTimeout(() => fetchProperties(), 0)
+    void fetchProperties({ nextFilters: filters, nextMapBounds: bounds })
   }
 
   const handleCreateAlert = async () => {
@@ -218,7 +255,7 @@ export default function PropertiesPage() {
 
       if (response.ok) {
         // Refresh properties to update favorite count
-        fetchProperties()
+        void fetchProperties({ nextFilters: filters, nextMapBounds: mapBounds })
       }
     } catch (error) {
       console.error('Error toggling favorite:', error)
@@ -474,15 +511,16 @@ export default function PropertiesPage() {
                   </h2>
                   <button
                     onClick={() => {
-                      setFilters({
+                      const nextFilters = {
                         location: '',
                         propertyType: '',
                         minPrice: '',
                         maxPrice: '',
                         bedrooms: '',
                         bathrooms: '',
-                      })
-                      setTimeout(() => fetchProperties(), 0)
+                      }
+                      setFilters(nextFilters)
+                      void fetchProperties({ nextFilters, nextMapBounds: mapBounds })
                     }}
                     className="text-sm text-blue-600 hover:text-blue-700"
                   >

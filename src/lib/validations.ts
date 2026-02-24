@@ -120,9 +120,8 @@ export const propertyUpdateSchema = propertySchema.partial()
 
 // Property Image Schema
 export const propertyImageSchema = z.object({
-  url: z.string().url('Invalid image URL'),
-  altText: z.string().optional(),
-  isPrimary: z.boolean().optional(),
+  imageUrl: z.string().url('Invalid image URL'),
+  isFeatured: z.boolean().optional(),
   order: z.number().int().optional(),
 })
 

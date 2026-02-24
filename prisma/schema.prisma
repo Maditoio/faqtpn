@@ -168,9 +168,8 @@ model Property {
 model PropertyImage {
   id          String   @id @default(uuid())
   propertyId  String   @map("property_id")
-  url         String
-  altText     String?  @map("alt_text")
-  isPrimary   Boolean  @default(false) @map("is_primary")
+  imageUrl    String   @map("image_url")
+  isFeatured  Boolean  @default(false) @map("is_featured")
   order       Int      @default(0)
   createdAt   DateTime @default(now()) @map("created_at")
 

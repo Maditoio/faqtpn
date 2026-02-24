@@ -3,6 +3,20 @@ import { prisma } from '@/lib/prisma'
 import { propertyUpdateSchema } from '@/lib/validations'
 import { getCurrentUser } from '@/lib/authorization'
 import cacheManager, { CacheKeys, CacheTTL, invalidateCache } from '@/lib/cache'
+import { toPropertyCompat } from '@/lib/property-images'
+
+function isValidImageUrl(value: string): boolean {
+  if (value.startsWith('data:')) {
+    return false
+  }
+
+  try {
+    const parsed = new URL(value)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
 
 /**
  * GET /api/properties/[id]
@@ -49,7 +63,7 @@ export async function GET(
       
       // Cache only if property exists and is approved (public)
       if (property && property.status === 'APPROVED') {
-        cacheManager.set(cacheKey, property, CacheTTL.MEDIUM)
+        cacheManager.set(cacheKey, toPropertyCompat(property), CacheTTL.MEDIUM)
       }
     }
 
@@ -72,7 +86,7 @@ export async function GET(
       }
     }
 
-    return NextResponse.json({ property })
+    return NextResponse.json({ property: toPropertyCompat(property) })
   } catch (error) {
     console.error('Error fetching property:', error)
     return NextResponse.json(
@@ -181,17 +195,30 @@ export async function PATCH(
 
       // Create new images from both existing (kept) and new uploads
       const allImages = [
-        ...images.existing.map((img: any, index: number) => ({
-          url: existingImages.find((ei: any) => ei.id === img.id)?.url || '',
-          isPrimary: img.isPrimary,
+        ...images.existing.map((img: { id: string; isFeatured?: boolean; isPrimary?: boolean }, index: number) => ({
+          imageUrl: existingImages.find((existingImage) => existingImage.id === img.id)?.imageUrl || '',
+          isFeatured: img.isFeatured ?? img.isPrimary ?? false,
           order: index,
         })),
-        ...images.new.map((img: any, index: number) => ({
-          url: img.data,
-          isPrimary: img.isPrimary,
+        ...images.new.map((img: { imageUrl?: string; url?: string; data?: string; isFeatured?: boolean; isPrimary?: boolean }, index: number) => ({
+          imageUrl: img.imageUrl || img.url || img.data || '',
+          isFeatured: img.isFeatured ?? img.isPrimary ?? false,
           order: images.existing.length + index,
         })),
       ]
+
+      if (allImages.some((img) => !img.imageUrl || !isValidImageUrl(img.imageUrl))) {
+        return NextResponse.json(
+          { error: 'Invalid image URL. Upload images to Blob before updating the property.' },
+          { status: 400 }
+        )
+      }
+
+      const featuredIndex = allImages.findIndex((img) => img.isFeatured)
+      const enforcedFeaturedIndex = featuredIndex >= 0 ? featuredIndex : 0
+      allImages.forEach((img, index) => {
+        img.isFeatured = index === enforcedFeaturedIndex
+      })
 
       if (allImages.length > 0) {
         imageUpdate = {
@@ -334,7 +361,7 @@ export async function PATCH(
 
     return NextResponse.json({
       message: 'Property updated successfully',
-      property: updatedProperty,
+      property: toPropertyCompat(updatedProperty),
     })
   } catch (error: any) {
     console.error('❌ Error updating property:', error)

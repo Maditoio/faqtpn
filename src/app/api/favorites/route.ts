@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/authorization'
 import cacheManager, { CacheKeys, CacheTTL, invalidateCache } from '@/lib/cache'
+import { toPropertyCompat } from '@/lib/property-images'
 
 /**
  * GET /api/favorites
@@ -43,7 +44,12 @@ export async function GET(req: NextRequest) {
       CacheTTL.SHORT // 5 minutes
     )
 
-    return NextResponse.json({ favorites })
+    return NextResponse.json({
+      favorites: favorites.map((favorite) => ({
+        ...favorite,
+        property: toPropertyCompat(favorite.property),
+      })),
+    })
   } catch (error) {
     console.error('Error fetching favorites:', error)
     return NextResponse.json(
@@ -124,7 +130,13 @@ export async function POST(req: NextRequest) {
     cacheManager.del(CacheKeys.propertyFavorites(propertyId))
 
     return NextResponse.json(
-      { message: 'Property added to favorites', favorite },
+      {
+        message: 'Property added to favorites',
+        favorite: {
+          ...favorite,
+          property: toPropertyCompat(favorite.property),
+        },
+      },
       { status: 201 }
     )
   } catch (error) {

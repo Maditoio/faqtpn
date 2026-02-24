@@ -91,6 +91,9 @@ DATABASE_URL="postgresql://YOUR_USERNAME:YOUR_PASSWORD@localhost:5432/property_r
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="your-super-secret-key-change-this-in-production"
 
+# Vercel Blob Storage
+BLOB_READ_WRITE_TOKEN="your-vercel-blob-read-write-token"
+
 # Google Maps API Key
 # Required for location autocomplete and address validation
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY="your-google-maps-api-key-here"
@@ -321,6 +324,7 @@ Ensure these are set securely:
 - `DATABASE_URL` - Production PostgreSQL connection string
 - `NEXTAUTH_SECRET` - Strong random secret (use `openssl rand -base64 32`)
 - `NEXTAUTH_URL` - Your production domain
+- `BLOB_READ_WRITE_TOKEN` - Vercel Blob read/write token
 - `NODE_ENV="production"`
 
 ### Security Checklist

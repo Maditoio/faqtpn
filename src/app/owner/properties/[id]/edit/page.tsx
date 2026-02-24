@@ -12,6 +12,7 @@ import ImageUpload, { ImageFile } from '@/components/ImageUpload'
 import LocationAutocomplete from '@/components/LocationAutocomplete'
 import PurchasePhotosModal from '@/components/PurchasePhotosModal'
 import { getPhotoLimitInfo } from '@/lib/photo-limits'
+import { mapApiImagesToClientImages, syncPropertyImages } from '@/lib/property-image-client'
 
 interface EditPropertyPageProps {
   params: Promise<{ id: string }>
@@ -78,6 +79,20 @@ export default function EditPropertyPage({ params }: EditPropertyPageProps) {
     'Fireplace',
   ]
 
+  const normalizeImages = (currentImages: ImageFile[]): ImageFile[] => {
+    if (currentImages.length === 0) {
+      return currentImages
+    }
+
+    const featuredIndex = currentImages.findIndex((image) => image.isPrimary)
+    const enforcedFeaturedIndex = featuredIndex >= 0 ? featuredIndex : 0
+
+    return currentImages.map((image, index) => ({
+      ...image,
+      isPrimary: index === enforcedFeaturedIndex,
+    }))
+  }
+
   useEffect(() => {
     const loadProperty = async () => {
       const resolvedParams = await params
@@ -141,7 +156,7 @@ export default function EditPropertyPage({ params }: EditPropertyPageProps) {
           setExistingImages(property.images)
           const imageFiles: ImageFile[] = property.images.map((img: any, index: number) => ({
             id: img.id || `existing-${index}`,
-            file: null as any, // No file for existing images
+            file: null, // No file for existing images
             preview: img.url,
             isPrimary: img.isPrimary || false,
           }))
@@ -220,27 +235,6 @@ export default function EditPropertyPage({ params }: EditPropertyPageProps) {
     setSaving(true)
 
     try {
-      // Separate existing images from new uploads
-      const newImages = images.filter(img => img.file !== null)
-      const keptExistingImages = images.filter(img => img.file === null)
-
-      // Convert new images to base64
-      const newImagePromises = newImages.map(async (img) => {
-        return new Promise<{ data: string; isPrimary: boolean }>((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onload = () => {
-            resolve({
-              data: reader.result as string,
-              isPrimary: img.isPrimary,
-            })
-          }
-          reader.onerror = reject
-          reader.readAsDataURL(img.file)
-        })
-      })
-
-      const newImageData = await Promise.all(newImagePromises)
-
       const response = await fetch(`/api/properties/${propertyId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -265,13 +259,6 @@ export default function EditPropertyPage({ params }: EditPropertyPageProps) {
           electricityPrepaid: formData.electricityPrepaid,
           depositMonths: parseInt(formData.depositMonths),
           bankStatementsMonths: parseInt(formData.bankStatementsMonths),
-          images: {
-            existing: keptExistingImages.map(img => ({
-              id: img.id,
-              isPrimary: img.isPrimary,
-            })),
-            new: newImageData,
-          },
         }),
       })
 
@@ -280,6 +267,9 @@ export default function EditPropertyPage({ params }: EditPropertyPageProps) {
       if (!response.ok) {
         setError(data.error || 'Failed to update property')
       } else {
+        const normalizedImages = normalizeImages(images)
+        const syncedImages = await syncPropertyImages(propertyId, normalizedImages)
+        setImages(mapApiImagesToClientImages(syncedImages))
         router.push('/owner/dashboard')
       }
     } catch (err) {

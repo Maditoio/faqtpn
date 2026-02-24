@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import cacheManager, { CacheKeys, CacheTTL } from '@/lib/cache'
 
 /**
  * GET /api/properties/locations
@@ -7,28 +8,34 @@ import { prisma } from '@/lib/prisma'
  */
 export async function GET() {
   try {
-    // Get all approved properties grouped by location
-    const locations = await prisma.property.groupBy({
-      by: ['location'],
-      where: {
-        status: 'APPROVED',
+    const locations = await cacheManager.getOrSet(
+      CacheKeys.propertyLocations(),
+      async () => {
+        return prisma.property.groupBy({
+          by: ['location'],
+          where: {
+            status: 'APPROVED',
+          },
+          _count: {
+            id: true,
+          },
+          orderBy: {
+            _count: {
+              id: 'desc',
+            },
+          },
+          take: 10,
+        })
       },
-      _count: {
-        id: true,
-      },
-      orderBy: {
-        _count: {
-          id: 'desc',
-        },
-      },
-      take: 10, // Top 10 popular locations
-    })
+      CacheTTL.VERY_LONG
+    )
 
-    // Format the response
-    const formattedLocations = locations.map((loc) => ({
-      location: loc.location,
-      count: loc._count.id,
-    }))
+    const formattedLocations = locations
+      .filter((loc) => !!loc.location)
+      .map((loc) => ({
+        location: loc.location,
+        count: loc._count.id,
+      }))
 
     return NextResponse.json({
       locations: formattedLocations,

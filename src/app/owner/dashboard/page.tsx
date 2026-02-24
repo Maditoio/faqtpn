@@ -45,12 +45,15 @@ export default function OwnerDashboard() {
 
   const fetchProperties = async () => {
     try {
-      const response = await fetch('/api/owner/properties')
-      const data = await response.json()
+      const [propertiesResponse, profileResponse] = await Promise.all([
+        fetch('/api/owner/properties'),
+        fetch('/api/profile'),
+      ])
+
+      const data = await propertiesResponse.json()
       setProperties(data.properties || [])
       
       // Check if user has contact info
-      const profileResponse = await fetch('/api/profile')
       if (profileResponse.ok) {
         const profileData = await profileResponse.json()
         const hasContactInfo = profileData.user.phone || profileData.user.whatsapp

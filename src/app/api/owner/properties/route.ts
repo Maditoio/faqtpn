@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/authorization'
 import cacheManager, { CacheKeys, CacheTTL } from '@/lib/cache'
+import { toPropertyCompat } from '@/lib/property-images'
 
 /**
  * GET /api/owner/properties
@@ -28,7 +29,8 @@ export async function GET(req: NextRequest) {
           where: { ownerId: user.id },
           include: {
             images: {
-              orderBy: { order: 'asc' },
+              orderBy: [{ isFeatured: 'desc' }, { order: 'asc' }],
+              take: 1,
             },
             _count: {
               select: {
@@ -42,7 +44,7 @@ export async function GET(req: NextRequest) {
       CacheTTL.SHORT // 5 minutes
     )
 
-    return NextResponse.json({ properties })
+    return NextResponse.json({ properties: properties.map(toPropertyCompat) })
   } catch (error) {
     console.error('Error fetching owner properties:', error)
     return NextResponse.json(

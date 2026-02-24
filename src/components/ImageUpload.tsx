@@ -6,7 +6,7 @@ import imageCompression from 'browser-image-compression';
 
 export interface ImageFile {
   id: string;
-  file: File;
+  file: File | null;
   preview: string;
   isPrimary: boolean;
 }

@@ -10,6 +10,7 @@ import LocationAutocomplete from '@/components/LocationAutocomplete'
 import PricingSelector, { pricingPlans } from '@/components/property/PricingSelector'
 import { CheckIcon } from '@/components/icons/Icons'
 import { useToast } from '@/components/ui/Toast'
+import { mapApiImagesToClientImages, syncPropertyImages } from '@/lib/property-image-client'
 
 interface PropertyWizardProps {
   draftId?: string
@@ -129,7 +130,7 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
       if (initialData.images) {
         const imageFiles: ImageFile[] = initialData.images.map((img: any, index: number) => ({
           id: img.id || `existing-${index}`,
-          file: null as any,
+          file: null,
           preview: img.url,
           isPrimary: img.isPrimary || false,
         }))
@@ -238,6 +239,20 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
     )
   }
 
+  const normalizeImages = (currentImages: ImageFile[]): ImageFile[] => {
+    if (currentImages.length === 0) {
+      return currentImages
+    }
+
+    const featuredIndex = currentImages.findIndex((image) => image.isPrimary)
+    const enforcedFeaturedIndex = featuredIndex >= 0 ? featuredIndex : 0
+
+    return currentImages.map((image, index) => ({
+      ...image,
+      isPrimary: index === enforcedFeaturedIndex,
+    }))
+  }
+
   const autoSaveDraft = async () => {
     setAutoSaving(true)
     try {
@@ -284,56 +299,18 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
 
     console.log('📝 Draft data prepared:', draftData)
 
-    // Handle images
-    let imageData: any = undefined
-    if (images.length > 0) {
-      const newImages = images.filter(img => img.file !== null)
-      const keptExistingImages = images.filter(img => img.file === null)
-
-      const newImagePromises = newImages.map(async (img) => {
-        return new Promise<{ data: string; isPrimary: boolean }>((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onload = () => {
-            resolve({
-              data: reader.result as string,
-              isPrimary: img.isPrimary,
-            })
-          }
-          reader.onerror = reject
-          reader.readAsDataURL(img.file)
-        })
-      })
-
-      const newImageData = await Promise.all(newImagePromises)
-      
-      if (propertyId) {
-        imageData = {
-          existing: keptExistingImages.map(img => ({
-            id: img.id,
-            isPrimary: img.isPrimary,
-          })),
-          new: newImageData,
-        }
-      } else {
-        imageData = newImageData
-      }
-    }
-
     const url = propertyId 
       ? `/api/properties/${propertyId}`
       : '/api/properties'
     
     const method = propertyId ? 'PATCH' : 'POST'
 
-    console.log('🚀 Sending request:', { url, method, hasImages: !!imageData })
+    console.log('🚀 Sending request:', { url, method })
 
     const response = await fetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...draftData,
-        ...(imageData && { images: imageData }),
-      }),
+      body: JSON.stringify(draftData),
     })
 
     console.log('📡 Response status:', response.status)
@@ -347,9 +324,17 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
     const data = await response.json()
     console.log('✅ Draft saved successfully:', data)
     
-    if (!propertyId && data.property?.id) {
-      setPropertyId(data.property.id)
-      console.log('🆔 Property ID set:', data.property.id)
+    const resolvedPropertyId = propertyId || data.property?.id
+
+    if (!propertyId && resolvedPropertyId) {
+      setPropertyId(resolvedPropertyId)
+      console.log('🆔 Property ID set:', resolvedPropertyId)
+    }
+
+    if (resolvedPropertyId) {
+      const normalizedImages = normalizeImages(images)
+      const syncedImages = await syncPropertyImages(resolvedPropertyId, normalizedImages)
+      setImages(mapApiImagesToClientImages(syncedImages))
     }
 
     return data
@@ -533,6 +518,10 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
   const submitProperty = async (useWalletPayment: boolean = false) => {
     setSaving(true)
     try {
+      if (images.length === 0) {
+        throw new Error('Please upload at least one image before submitting')
+      }
+
       const selectedPlanData = pricingPlans.find(p => p.id === listingPlan)
       
       // Update status to PENDING for submission
@@ -575,53 +564,44 @@ export default function PropertyWizard({ draftId, initialData }: PropertyWizardP
       if (formData.depositMonths) submitData.depositMonths = parseInt(formData.depositMonths)
       if (formData.bankStatementsMonths) submitData.bankStatementsMonths = parseInt(formData.bankStatementsMonths)
 
-      // Handle images
-      let imageData: any = undefined
-      if (images.length > 0) {
-        const newImages = images.filter(img => img.file !== null)
-        const keptExistingImages = images.filter(img => img.file === null)
+      let resolvedPropertyId = propertyId
 
-        const newImagePromises = newImages.map(async (img) => {
-          return new Promise<{ data: string; isPrimary: boolean }>((resolve, reject) => {
-            const reader = new FileReader()
-            reader.onload = () => {
-              resolve({
-                data: reader.result as string,
-                isPrimary: img.isPrimary,
-              })
-            }
-            reader.onerror = reject
-            reader.readAsDataURL(img.file)
-          })
+      if (!resolvedPropertyId) {
+        const draftCreateResponse = await fetch('/api/properties', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: submitData.title,
+            status: 'DRAFT',
+          }),
         })
 
-        const newImageData = await Promise.all(newImagePromises)
-        
-        if (propertyId) {
-          imageData = {
-            existing: keptExistingImages.map(img => ({
-              id: img.id,
-              isPrimary: img.isPrimary,
-            })),
-            new: newImageData,
-          }
-        } else {
-          imageData = newImageData
+        if (!draftCreateResponse.ok) {
+          const draftError = await draftCreateResponse.json().catch(() => ({}))
+          throw new Error(draftError.error || 'Failed to initialize property draft for image upload')
         }
+
+        const draftPayload = await draftCreateResponse.json()
+        resolvedPropertyId = draftPayload.property?.id
+
+        if (!resolvedPropertyId) {
+          throw new Error('Failed to initialize property draft for image upload')
+        }
+
+        setPropertyId(resolvedPropertyId)
       }
 
-      const url = propertyId 
-        ? `/api/properties/${propertyId}`
-        : '/api/properties'
-      
-      const method = propertyId ? 'PATCH' : 'POST'
+      const normalizedImages = normalizeImages(images)
+      const syncedImages = await syncPropertyImages(resolvedPropertyId, normalizedImages)
+      setImages(mapApiImagesToClientImages(syncedImages))
+
+      const url = `/api/properties/${resolvedPropertyId}`
 
       const response = await fetch(url, {
-        method,
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...submitData,
-          ...(imageData && { images: imageData }),
           paymentMethod: useWalletPayment ? 'wallet' : 'card',
         }),
       })

@@ -4,10 +4,24 @@ import { propertySchema, draftPropertySchema, propertySearchSchema } from '@/lib
 import { getCurrentUser } from '@/lib/authorization'
 import cacheManager, { CacheKeys, CacheTTL, invalidateCache } from '@/lib/cache'
 import { sendListingConfirmationEmail } from '@/lib/email'
+import { toPropertyCompat } from '@/lib/property-images'
 
 // Configure API route
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60 // 60 seconds timeout
+
+function isValidImageUrl(value: string): boolean {
+  if (value.startsWith('data:')) {
+    return false
+  }
+
+  try {
+    const parsed = new URL(value)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
 
 /**
  * GET /api/properties
@@ -81,7 +95,6 @@ export async function GET(req: NextRequest) {
     if (northEast && southWest) {
       const [neLat, neLng] = northEast.split(',').map(Number)
       const [swLat, swLng] = southWest.split(',').map(Number)
-      
       if (!isNaN(neLat) && !isNaN(neLng) && !isNaN(swLat) && !isNaN(swLng)) {
         where.latitude = { gte: swLat, lte: neLat }
         where.longitude = { gte: swLng, lte: neLng }
@@ -92,27 +105,42 @@ export async function GET(req: NextRequest) {
     const skip = ((page || 1) - 1) * (limit || 20)
 
     // Create cache key based on filters
-    const cacheKey = CacheKeys.propertiesList({ 
-      query, location, propertyType, minPrice, maxPrice, bedrooms, bathrooms, page, limit 
+    const cacheKey = CacheKeys.propertiesList({
+      query, location, propertyType, minPrice, maxPrice, bedrooms, bathrooms, page, limit
     })
 
     // Try to get from cache
     const result = await cacheManager.getOrSet(
       cacheKey,
       async () => {
-        // Get properties
         const [properties, total] = await Promise.all([
           prisma.property.findMany({
             where,
-            include: {
+            select: {
+              id: true,
+              title: true,
+              description: true,
+              propertyType: true,
+              price: true,
+              location: true,
+              bedrooms: true,
+              bathrooms: true,
+              parkingSpaces: true,
+              status: true,
+              latitude: true,
+              longitude: true,
+              availableFrom: true,
               images: {
-                orderBy: { order: 'asc' },
-              },
-              owner: {
                 select: {
                   id: true,
-                  name: true,
+                  propertyId: true,
+                  imageUrl: true,
+                  isFeatured: true,
+                  order: true,
+                  createdAt: true,
                 },
+                orderBy: [{ isFeatured: 'desc' }, { order: 'asc' }],
+                take: 1,
               },
               _count: {
                 select: {
@@ -128,7 +156,7 @@ export async function GET(req: NextRequest) {
         ])
 
         return {
-          properties,
+          properties: properties.map(toPropertyCompat),
           pagination: {
             page: page || 1,
             limit: limit || 20,
@@ -137,7 +165,7 @@ export async function GET(req: NextRequest) {
           },
         }
       },
-      CacheTTL.SHORT // 5 minutes cache
+      CacheTTL.SHORT
     )
 
     return NextResponse.json(result)
@@ -233,14 +261,30 @@ export async function POST(req: NextRequest) {
     }
 
     // Prepare image data
-    const imageCreate = images && images.length > 0
-      ? {
-          create: images.map((img: { data: string; isPrimary: boolean }, index: number) => ({
-            url: img.data,
-            isPrimary: img.isPrimary,
-            order: index,
-          })),
-        }
+    const normalizedImages: Array<{ imageUrl: string; isFeatured: boolean; order: number }> | undefined = images?.map((img: { imageUrl?: string; url?: string; data?: string; isFeatured?: boolean; isPrimary?: boolean; order?: number }, index: number) => {
+      const imageUrl = img.imageUrl || img.url || img.data
+
+      if (!imageUrl || !isValidImageUrl(imageUrl)) {
+        throw new Error('Invalid image URL. Upload images to Blob before creating the property.')
+      }
+
+      return {
+        imageUrl,
+        isFeatured: img.isFeatured ?? img.isPrimary ?? false,
+        order: img.order ?? index,
+      }
+    })
+
+    if (normalizedImages && normalizedImages.length > 0) {
+      const featuredIndex = normalizedImages.findIndex((img: { isFeatured: boolean }) => img.isFeatured)
+      const enforcedFeaturedIndex = featuredIndex >= 0 ? featuredIndex : 0
+      normalizedImages.forEach((img: { isFeatured: boolean }, index: number) => {
+        img.isFeatured = index === enforcedFeaturedIndex
+      })
+    }
+
+    const imageCreate = normalizedImages && normalizedImages.length > 0
+      ? { create: normalizedImages }
       : undefined
 
     // Create property with images
@@ -422,7 +466,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(
-      { message: 'Property created successfully', property },
+      { message: 'Property created successfully', property: toPropertyCompat(property) },
       { status: 201 }
     )
   } catch (error: any) {

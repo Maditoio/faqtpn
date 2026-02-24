@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/authorization'
+import { toPropertyCompat } from '@/lib/property-images'
 
 /**
  * GET /api/owner/properties/drafts
@@ -25,13 +26,14 @@ export async function GET(req: NextRequest) {
       },
       include: {
         images: {
-          orderBy: { order: 'asc' },
+          orderBy: [{ isFeatured: 'desc' }, { order: 'asc' }],
+          take: 1,
         },
       },
       orderBy: { updatedAt: 'desc' },
     })
 
-    return NextResponse.json({ drafts })
+    return NextResponse.json({ drafts: drafts.map(toPropertyCompat) })
   } catch (error) {
     console.error('Error fetching drafts:', error)
     return NextResponse.json(
