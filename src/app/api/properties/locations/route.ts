@@ -37,9 +37,16 @@ export async function GET() {
         count: loc._count.id,
       }))
 
-    return NextResponse.json({
-      locations: formattedLocations,
-    })
+    return NextResponse.json(
+      {
+        locations: formattedLocations,
+      },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
+        },
+      }
+    )
   } catch (error) {
     console.error('Error fetching locations:', error)
     return NextResponse.json(

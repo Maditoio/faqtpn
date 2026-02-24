@@ -28,7 +28,8 @@ export default function PropertiesPage() {
   const { data: session } = useSession()
   const [properties, setProperties] = useState<Property[]>([])
   const [popularLocations, setPopularLocations] = useState<Array<{ location: string; count: number }>>([])
-  const [loading, setLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [filters, setFilters] = useState({
     location: '',
     propertyType: '',
@@ -45,10 +46,24 @@ export default function PropertiesPage() {
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
   const [mapFeatureEnabled, setMapFeatureEnabled] = useState(false)
   const propertiesRequestRef = useRef<AbortController | null>(null)
+  const propertiesCacheKey = 'properties:latest-results'
 
   useEffect(() => {
+    const cached = sessionStorage.getItem(propertiesCacheKey)
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached) as Property[]
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setProperties(parsed)
+          setInitialLoading(false)
+        }
+      } catch (error) {
+        console.error('Error parsing cached properties:', error)
+      }
+    }
+
     void Promise.all([
-      fetchProperties(),
+      fetchProperties({ loadingMode: cached ? 'silent' : 'hard' }),
       fetchPopularLocations(),
       fetchMapFeatureSetting(),
     ])
@@ -101,15 +116,25 @@ export default function PropertiesPage() {
   const fetchProperties = async (options?: {
     nextFilters?: typeof filters
     nextMapBounds?: google.maps.LatLngBounds | null
+    loadingMode?: 'hard' | 'soft' | 'silent'
   }) => {
     const effectiveFilters = options?.nextFilters ?? filters
     const effectiveMapBounds = options?.nextMapBounds ?? mapBounds
+    const loadingMode = options?.loadingMode ?? 'soft'
 
     propertiesRequestRef.current?.abort()
     const controller = new AbortController()
     propertiesRequestRef.current = controller
 
-    setLoading(true)
+    if (loadingMode === 'hard') {
+      setInitialLoading(true)
+      setRefreshing(false)
+    }
+
+    if (loadingMode === 'soft') {
+      setRefreshing(true)
+    }
+
     setShowAlertPrompt(false)
 
     try {
@@ -141,6 +166,7 @@ export default function PropertiesPage() {
       const data = await response.json()
       const results = data.properties || []
       setProperties(results)
+      sessionStorage.setItem(propertiesCacheKey, JSON.stringify(results))
       
       // Show alert prompt if user searched with filters and got no/few results
       const hasActiveFilters =
@@ -160,7 +186,8 @@ export default function PropertiesPage() {
       console.error('Error fetching properties:', error)
     } finally {
       if (propertiesRequestRef.current === controller) {
-        setLoading(false)
+        setInitialLoading(false)
+        setRefreshing(false)
       }
     }
   }
@@ -169,19 +196,19 @@ export default function PropertiesPage() {
     const nextFilters = { ...filters, location }
     setFilters(nextFilters)
     setMapBounds(null) // Clear map bounds when using text search
-    void fetchProperties({ nextFilters, nextMapBounds: null })
+    void fetchProperties({ nextFilters, nextMapBounds: null, loadingMode: 'soft' })
   }
 
   const handleSearch = () => {
     setSearchPerformed(true)
     setMapBounds(null) // Clear map bounds when using text search
-    void fetchProperties({ nextFilters: filters, nextMapBounds: null })
+    void fetchProperties({ nextFilters: filters, nextMapBounds: null, loadingMode: 'soft' })
   }
 
   const handleMapBoundsChanged = (bounds: google.maps.LatLngBounds) => {
     setMapBounds(bounds)
     setSearchPerformed(true)
-    void fetchProperties({ nextFilters: filters, nextMapBounds: bounds })
+    void fetchProperties({ nextFilters: filters, nextMapBounds: bounds, loadingMode: 'soft' })
   }
 
   const handleCreateAlert = async () => {
@@ -255,7 +282,7 @@ export default function PropertiesPage() {
 
       if (response.ok) {
         // Refresh properties to update favorite count
-        void fetchProperties({ nextFilters: filters, nextMapBounds: mapBounds })
+        void fetchProperties({ nextFilters: filters, nextMapBounds: mapBounds, loadingMode: 'silent' })
       }
     } catch (error) {
       console.error('Error toggling favorite:', error)
@@ -325,7 +352,7 @@ export default function PropertiesPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
           <div className="flex items-center justify-between">
             <p className="text-gray-600">
-              {loading ? 'Loading...' : `${properties.length} ${properties.length === 1 ? 'property' : 'properties'} found`}
+              {initialLoading ? 'Loading...' : refreshing ? 'Updating...' : `${properties.length} ${properties.length === 1 ? 'property' : 'properties'} found`}
             </p>
             <div className="flex gap-2 bg-gray-100 rounded-lg p-1">
               <button
@@ -367,7 +394,7 @@ export default function PropertiesPage() {
       {!mapFeatureEnabled && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
           <p className="text-gray-600">
-            {loading ? 'Loading...' : `${properties.length} ${properties.length === 1 ? 'property' : 'properties'} found`}
+            {initialLoading ? 'Loading...' : refreshing ? 'Updating...' : `${properties.length} ${properties.length === 1 ? 'property' : 'properties'} found`}
           </p>
         </div>
       )}
@@ -377,7 +404,7 @@ export default function PropertiesPage() {
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Properties Grid/Map - Left Side */}
           <div className="flex-1">
-            {loading ? (
+            {initialLoading && properties.length === 0 ? (
               <div className="flex justify-center py-12">
                 <LoadingSpinner size="lg" />
               </div>
@@ -520,7 +547,7 @@ export default function PropertiesPage() {
                         bathrooms: '',
                       }
                       setFilters(nextFilters)
-                      void fetchProperties({ nextFilters, nextMapBounds: mapBounds })
+                      void fetchProperties({ nextFilters, nextMapBounds: mapBounds, loadingMode: 'soft' })
                     }}
                     className="text-sm text-blue-600 hover:text-blue-700"
                   >
