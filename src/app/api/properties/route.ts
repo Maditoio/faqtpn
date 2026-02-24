@@ -500,6 +500,15 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       )
     }
+
+    if (error.code === 'P2022') {
+      return NextResponse.json(
+        {
+          error: 'Database schema is out of date. Run Prisma migrations (prisma migrate deploy) and redeploy.',
+        },
+        { status: 500 }
+      )
+    }
     
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
